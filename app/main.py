@@ -1,0 +1,294 @@
+from flask import Flask, render_template, request, send_file, flash, redirect, url_for, jsonify
+import os
+import webbrowser
+from threading import Timer, Thread
+import time
+import base64
+from app.utils.converters import convert_file, detect_excel_version
+from app.utils.compressor import compress_file, estimate_compression, calculate_quality_for_target_size
+from app.utils.pdf_merger import get_pdf_preview, get_pdf_page_count, merge_pdfs, get_all_pdf_previews, split_pdf
+import zipfile
+
+app = Flask(__name__)
+app.secret_key = "supersecretkey"
+
+last_heartbeat = time.time()
+
+def monitor_heartbeat():
+    global last_heartbeat
+    while True:
+        time.sleep(1)
+        if time.time() - last_heartbeat > 5:
+            print("Nenhum heartbeat recebido. Encerrando servidor...")
+            os._exit(0)
+
+def open_browser():
+    webbrowser.open_new_tab("http://127.0.0.1:5000")
+
+@app.route('/')
+def index():
+    return render_template('home.html')
+
+@app.route('/converter')
+def converter():
+    return render_template('converter.html')
+
+@app.route('/excel-converter')
+def excel_converter():
+    return render_template('excel_converter.html')
+
+@app.route('/compressor')
+def compressor():
+    return render_template('compressor.html')
+
+@app.route('/pdf-merger')
+def pdf_merger():
+    return render_template('pdf_merger.html')
+
+@app.route('/pdf-splitter')
+def pdf_splitter():
+    return render_template('pdf_splitter.html')
+
+@app.route('/pdf-splitter/load', methods=['POST'])
+def pdf_splitter_load():
+    """Carrega todas as páginas do PDF para preview."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+    
+    try:
+        content = file.read()
+        previews = get_all_pdf_previews(content, zoom=0.4)
+        pages = get_pdf_page_count(content)
+        return jsonify({'previews': previews, 'pages': pages})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/pdf-splitter/split', methods=['POST'])
+def pdf_split():
+    """Separa o PDF em múltiplos arquivos."""
+    try:
+        data = request.get_json()
+        content = base64.b64decode(data.get('content', ''))
+        split_points = data.get('splitPoints', [])
+        original_filename = data.get('fileName', 'documento')
+        
+        if not content:
+            return jsonify({'error': 'Conteúdo do PDF não fornecido'}), 400
+        
+        if not split_points:
+            return jsonify({'error': 'Nenhum ponto de separação definido'}), 400
+        
+        # Split the PDF
+        pdf_parts = split_pdf(content, split_points)
+        
+        # Create ZIP file with all parts
+        from io import BytesIO
+        zip_buffer = BytesIO()
+        
+        base_name = original_filename.replace('.pdf', '').replace('.PDF', '')
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for idx, (pdf_io, _) in enumerate(pdf_parts):
+                pdf_io.seek(0)
+                zip_file.writestr(f"{base_name}_parte_{idx + 1}.pdf", pdf_io.read())
+        
+        zip_buffer.seek(0)
+        
+        return send_file(
+            zip_buffer,
+            as_attachment=True,
+            download_name=f"{base_name}_separado.zip",
+            mimetype='application/zip'
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/pdf-merger/preview', methods=['POST'])
+def pdf_preview():
+    """Gera preview da primeira página do PDF."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+    
+    try:
+        content = file.read()
+        preview = get_pdf_preview(content, page_number=0, zoom=0.5)
+        pages = get_pdf_page_count(content)
+        return jsonify({'preview': preview, 'pages': pages})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/pdf-merger/merge', methods=['POST'])
+def pdf_merge():
+    """Unifica múltiplos PDFs."""
+    try:
+        data = request.get_json()
+        files = data.get('files', [])
+        
+        if len(files) < 2:
+            return jsonify({'error': 'É necessário pelo menos 2 arquivos para unificar'}), 400
+        
+        pdf_list = []
+        for file_data in files:
+            content = base64.b64decode(file_data['content'])
+            rotation = file_data.get('rotation', 0)
+            pdf_list.append({'content': content, 'rotation': rotation})
+        
+        output, filename, mimetype = merge_pdfs(pdf_list)
+        
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype=mimetype
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/heartbeat', methods=['POST'])
+def heartbeat():
+    global last_heartbeat
+    last_heartbeat = time.time()
+    return 'OK'
+
+@app.route('/detect-excel', methods=['POST'])
+def detect_excel():
+    """Detecta a versão do arquivo Excel e retorna opções de conversão."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+    
+    result = detect_excel_version(file.filename)
+    if result:
+        return jsonify(result)
+    else:
+        return jsonify({'error': 'Formato de arquivo não reconhecido'}), 400
+
+@app.route('/convert', methods=['POST'])
+def convert():
+    # Determinar de qual página veio a requisição
+    referer = request.headers.get('Referer', '')
+    if 'excel-converter' in referer:
+        redirect_page = 'excel_converter'
+    elif 'converter' in referer:
+        redirect_page = 'converter'
+    else:
+        redirect_page = 'index'
+    
+    if 'file' not in request.files:
+        flash('Nenhum arquivo enviado')
+        return redirect(url_for(redirect_page))
+    
+    file = request.files['file']
+    conv_type = request.form.get('conv_type')
+    
+    if file.filename == '':
+        flash('Nenhum arquivo selecionado')
+        return redirect(url_for(redirect_page))
+    
+    try:
+        output, output_filename, mimetype = convert_file(file, conv_type)
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=output_filename,
+            mimetype=mimetype
+        )
+    except Exception as e:
+        flash(f'Erro na conversão: {e}')
+        return redirect(url_for(redirect_page))
+
+@app.route('/compress', methods=['POST'])
+def compress():
+    if 'file' not in request.files:
+        flash('Nenhum arquivo enviado')
+        return redirect(url_for('compressor'))
+    
+    file = request.files['file']
+    compression_type = request.form.get('compression_type', 'auto')
+    quality = int(request.form.get('quality', 85))
+    
+    if file.filename == '':
+        flash('Nenhum arquivo selecionado')
+        return redirect(url_for('compressor'))
+    
+    try:
+        output, output_filename, mimetype, original_size, compressed_size, ratio = compress_file(
+            file, compression_type, quality
+        )
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=output_filename,
+            mimetype=mimetype
+        )
+    except Exception as e:
+        flash(f'Erro na compressão: {e}')
+        return redirect(url_for('compressor'))
+
+@app.route('/estimate-compression', methods=['POST'])
+def estimate_compression_route():
+    """Estima o tamanho final após compressão."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    compression_type = request.form.get('compression_type', 'auto')
+    quality = int(request.form.get('quality', 85))
+    
+    if file.filename == '':
+        return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+    
+    try:
+        result = estimate_compression(file, compression_type, quality)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/calculate-target-quality', methods=['POST'])
+def calculate_target_quality():
+    """Calcula a qualidade necessária para atingir um tamanho alvo."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    target_size = request.form.get('target_size', 0)
+    target_unit = request.form.get('target_unit', 'KB')
+    compression_type = request.form.get('compression_type', 'auto')
+    
+    if file.filename == '':
+        return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+    
+    try:
+        # Converter tamanho para bytes
+        target_size = float(target_size)
+        if target_unit == 'KB':
+            target_size_bytes = int(target_size * 1024)
+        elif target_unit == 'MB':
+            target_size_bytes = int(target_size * 1024 * 1024)
+        else:
+            target_size_bytes = int(target_size)
+        
+        result = calculate_quality_for_target_size(file, target_size_bytes, compression_type)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def run_app():
+    monitor_thread = Thread(target=monitor_heartbeat)
+    monitor_thread.daemon = True
+    monitor_thread.start()
+
+    Timer(1.5, open_browser).start()
+    app.run(debug=False, port=5000)

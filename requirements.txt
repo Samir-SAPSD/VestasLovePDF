@@ -1,0 +1,12 @@
+flask
+pandas
+openpyxl
+pyinstaller
+xlrd
+xlwt
+odfpy
+pyxlsb
+Pillow
+PyMuPDF
+python-docx
+pdf2docx
