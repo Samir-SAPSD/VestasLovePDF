@@ -7,6 +7,15 @@ import base64
 from app.utils.converters import convert_file, detect_excel_version
 from app.utils.compressor import compress_file, estimate_compression, calculate_quality_for_target_size
 from app.utils.pdf_merger import get_pdf_preview, get_pdf_page_count, merge_pdfs, get_all_pdf_previews, split_pdf
+from app.utils.ocr_pdf import (
+    check_tesseract_installed,
+    get_available_languages,
+    ocr_pdf_to_text,
+    ocr_pdf_to_searchable_pdf,
+    ocr_pdf_to_txt,
+    ocr_pdf_to_docx,
+    get_pdf_preview_for_ocr
+)
 import zipfile
 
 app = Flask(__name__)
@@ -48,6 +57,10 @@ def pdf_merger():
 @app.route('/pdf-splitter')
 def pdf_splitter():
     return render_template('pdf_splitter.html')
+
+@app.route('/ocr-pdf')
+def ocr_pdf():
+    return render_template('ocr_pdf.html')
 
 @app.route('/pdf-splitter/load', methods=['POST'])
 def pdf_splitter_load():
@@ -281,6 +294,93 @@ def calculate_target_quality():
         
         result = calculate_quality_for_target_size(file, target_size_bytes, compression_type)
         return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== ROTAS OCR ====================
+
+@app.route('/ocr/check')
+def ocr_check():
+    """Verifica se o Tesseract está instalado."""
+    return jsonify(check_tesseract_installed())
+
+
+@app.route('/ocr/languages')
+def ocr_languages():
+    """Retorna idiomas disponíveis para OCR."""
+    return jsonify(get_available_languages())
+
+
+@app.route('/ocr/preview', methods=['POST'])
+def ocr_preview():
+    """Gera preview de um PDF para OCR."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+    
+    try:
+        content = file.read()
+        preview = get_pdf_preview_for_ocr(content, page_number=0, zoom=0.4)
+        pages = get_pdf_page_count(content)
+        return jsonify({'preview': preview, 'pages': pages})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/ocr/extract', methods=['POST'])
+def ocr_extract():
+    """Extrai texto de um PDF usando OCR (retorna JSON)."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+    
+    lang = request.form.get('language', 'por')
+    dpi = int(request.form.get('dpi', 300))
+    
+    try:
+        result = ocr_pdf_to_text(file, lang=lang, dpi=dpi)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/ocr/convert', methods=['POST'])
+def ocr_convert():
+    """Converte PDF para formato com OCR."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'Nenhum arquivo enviado'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Nenhum arquivo selecionado'}), 400
+    
+    lang = request.form.get('language', 'por')
+    dpi = int(request.form.get('dpi', 300))
+    output_format = request.form.get('output_format', 'txt')
+    
+    try:
+        if output_format == 'txt':
+            output, filename, mimetype = ocr_pdf_to_txt(file, lang=lang, dpi=dpi)
+        elif output_format == 'docx':
+            output, filename, mimetype = ocr_pdf_to_docx(file, lang=lang, dpi=dpi)
+        elif output_format == 'pdf':
+            output, filename, mimetype = ocr_pdf_to_searchable_pdf(file, lang=lang, dpi=dpi)
+        else:
+            return jsonify({'error': 'Formato de saída inválido'}), 400
+        
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=filename,
+            mimetype=mimetype
+        )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

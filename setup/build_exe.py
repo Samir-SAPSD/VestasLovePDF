@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Script para criar o executável do Converter usando PyInstaller.
+Script para criar o executável do VestasLovePDF usando PyInstaller.
 Execute este script para gerar o instalador.
 """
 import subprocess
@@ -14,7 +14,7 @@ def main():
     os.chdir(base_dir)
     
     print("=" * 60)
-    print("  Converter - Build do Executável")
+    print("  VestasLovePDF - Build do Executável")
     print("=" * 60)
     
     # Instalar dependências
@@ -32,7 +32,7 @@ def main():
     
     pyinstaller_args = [
         sys.executable, "-m", "PyInstaller",
-        "--name=Converter",
+        "--name=VestasLovePDF",
         "--onefile",
         "--windowed",  # Sem console (modo silencioso)
         "--add-data", f"app/templates;app/templates",
@@ -42,9 +42,15 @@ def main():
         "--hidden-import=openpyxl",
         "--hidden-import=jinja2",
         "--hidden-import=werkzeug",
+        "--hidden-import=pytesseract",
+        "--hidden-import=PIL",
+        "--hidden-import=fitz",
+        "--hidden-import=docx",
         "--collect-submodules=flask",
         "--collect-submodules=jinja2",
         "--collect-submodules=werkzeug",
+        "--collect-submodules=PIL",
+        "--collect-submodules=fitz",
         "run.py"
     ]
     
@@ -59,7 +65,7 @@ def main():
     
     print("\n" + "=" * 60)
     print("  Build concluído com sucesso!")
-    print("  Executável: dist/Converter.exe")
+    print("  Executável: dist/VestasLovePDF.exe")
     print("=" * 60)
 
 def create_shortcut():
@@ -76,8 +82,8 @@ def create_shortcut():
         winreg.CloseKey(key)
         
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        exe_path = os.path.join(base_dir, "dist", "Converter.exe")
-        shortcut_path = os.path.join(desktop, "Converter.lnk")
+        exe_path = os.path.join(base_dir, "dist", "VestasLovePDF.exe")
+        shortcut_path = os.path.join(desktop, "VestasLovePDF.lnk")
         
         # Usa PowerShell para criar o atalho
         ps_script = f'''
@@ -85,7 +91,7 @@ def create_shortcut():
         $Shortcut = $WshShell.CreateShortcut("{shortcut_path}")
         $Shortcut.TargetPath = "{exe_path}"
         $Shortcut.WorkingDirectory = "{os.path.dirname(exe_path)}"
-        $Shortcut.Description = "Converter - Ferramenta de Conversão de Arquivos"
+        $Shortcut.Description = "VestasLovePDF - Ferramenta de PDF e Conversão de Arquivos"
         $Shortcut.Save()
         '''
         

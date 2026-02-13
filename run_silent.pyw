@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Script para executar o Converter em modo silencioso (sem janela do terminal).
+Script para executar o VestasLovePDF em modo silencioso (sem janela do terminal).
 Use a extensão .pyw para que o Python execute sem console.
 """
 import sys

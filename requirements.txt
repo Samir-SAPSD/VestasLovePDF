@@ -10,3 +10,4 @@ Pillow
 PyMuPDF
 python-docx
 pdf2docx
+pytesseract

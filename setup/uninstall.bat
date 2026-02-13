@@ -1,12 +1,12 @@
 @echo off
 chcp 65001 >nul
 echo ============================================================
-echo   Converter - Desinstalador
+echo   VestasLovePDF - Desinstalador
 echo ============================================================
 echo.
 
 :: Remove o atalho da área de trabalho
-set "SHORTCUT=%USERPROFILE%\Desktop\Converter.lnk"
+set "SHORTCUT=%USERPROFILE%\Desktop\VestasLovePDF.lnk"
 if exist "%SHORTCUT%" (
     del "%SHORTCUT%"
     echo [OK] Atalho removido da área de trabalho.
