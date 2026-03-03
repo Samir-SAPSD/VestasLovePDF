@@ -404,7 +404,8 @@ def convert_file(file, conv_type):
     source_ext = os.path.splitext(file.filename)[1].lower()
     
     if conv_type == 'csv_to_xlsx':
-        df = pd.read_csv(file)
+        # dtype=str preserva zeros à esquerda em dados numéricos
+        df = pd.read_csv(file, dtype=str)
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False)
         output_filename = base_filename + '.xlsx'
@@ -416,7 +417,8 @@ def convert_file(file, conv_type):
         mimetype = MIMETYPES['.zip']
         
     elif conv_type == 'csv_to_json':
-        df = pd.read_csv(file)
+        # dtype=str preserva zeros à esquerda em dados numéricos
+        df = pd.read_csv(file, dtype=str)
         json_str = df.to_json(orient='records', indent=4)
         output.write(json_str.encode('utf-8'))
         output_filename = base_filename + '.json'

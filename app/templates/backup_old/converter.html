@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Arquivos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1F3144;
+            --primary-hover: #152536;
+            --accent-color: #005AFF;
+            --accent-light: #96CBF0;
+            --bg-color: #E3E5EB;
+            --text-dark: #606D7B;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .back-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            color: var(--accent-color);
+        }
+        
+        .converter-card {
+            max-width: 550px;
+            width: 100%;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(31, 49, 68, 0.1);
+            background: white;
+            margin: 0 auto;
+        }
+        
+        .page-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #2a4a66 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+        }
+        
+        .page-icon i {
+            font-size: 28px;
+            color: white;
+        }
+        
+        .btn-convert {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        
+        .btn-convert:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        /* Modal de inatividade */
+        .idle-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(31, 49, 68, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .idle-modal-overlay.show {
+            display: flex;
+        }
+        
+        .idle-modal {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalPop 0.3s ease;
+        }
+        
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .idle-modal-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .idle-modal-icon i { font-size: 36px; color: white; }
+        .idle-modal h3 { color: var(--primary-color); margin-bottom: 10px; font-weight: 600; }
+        .idle-modal p { color: var(--text-dark); margin-bottom: 25px; }
+        .idle-modal .countdown { font-size: 0.9rem; color: #A2A9B1; margin-bottom: 20px; }
+        .idle-modal .countdown span { font-weight: 600; color: #E17D28; }
+        .idle-modal-buttons { display: flex; gap: 15px; justify-content: center; }
+        .idle-modal-buttons .btn { padding: 12px 30px; border-radius: 8px; font-weight: 500; }
+        .btn-idle-yes { background-color: var(--primary-color); color: white; border: none; }
+        .btn-idle-yes:hover { background-color: var(--accent-color); color: white; }
+        .btn-idle-no { background-color: transparent; color: var(--text-dark); border: 2px solid #ddd; }
+        .btn-idle-no:hover { background-color: #f5f5f5; border-color: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/" class="back-link">
+        <i class="bi bi-arrow-left"></i> Voltar ao início
+    </a>
+    
+    <div class="converter-card">
+        <div class="page-icon">
+            <i class="bi bi-file-earmark-arrow-up"></i>
+        </div>
+        <h2 class="text-center mb-4">Conversor de Arquivos</h2>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-danger">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="/convert" method="post" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="conv_type" class="form-label">O que você deseja fazer?</label>
+                <select class="form-select" id="conv_type" name="conv_type" required onchange="updateAccept()">
+                    <option value="" selected disabled>Escolha o tipo de conversão...</option>
+                    <option value="csv_to_xlsx">CSV para Excel (.xlsx)</option>
+                    <option value="xlsx_to_csv">Excel (.xlsx) para CSV</option>
+                    <option value="csv_to_json">CSV para JSON</option>
+                    <option value="image_to_pdf">Imagem para PDF</option>
+                    <option value="word_to_pdf">Word para PDF</option>
+                    <option value="pdf_to_word">PDF para Word</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label for="file" class="form-label">Selecione o arquivo</label>
+                <input class="form-control" type="file" id="file" name="file" required disabled>
+            </div>
+            
+            <div class="d-grid">
+                <button type="submit" id="btn-submit" class="btn btn-convert btn-lg" disabled>
+                    <i class="bi bi-download me-2"></i>Converter e Baixar
+                </button>
+            </div>
+        </form>
+        
+        <p class="text-muted mt-4 text-center small">
+            O arquivo convertido será baixado automaticamente.
+        </p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function updateAccept() {
+        const convType = document.getElementById('conv_type').value;
+        const fileInput = document.getElementById('file');
+        const btnSubmit = document.getElementById('btn-submit');
+        
+        fileInput.disabled = false;
+        btnSubmit.disabled = false;
+        fileInput.value = '';
+
+        if (convType === 'csv_to_xlsx' || convType === 'csv_to_json') {
+            fileInput.accept = ".csv";
+        } else if (convType === 'xlsx_to_csv') {
+            fileInput.accept = ".xlsx";
+        } else if (convType === 'image_to_pdf') {
+            fileInput.accept = ".jpg,.jpeg,.png,.gif,.bmp,.tiff,.tif,.webp";
+        } else if (convType === 'word_to_pdf') {
+            fileInput.accept = ".docx,.doc";
+        } else if (convType === 'pdf_to_word') {
+            fileInput.accept = ".pdf";
+        }
+    }
+
+    // === Sistema de detecção de inatividade ===
+    const IDLE_TIMEOUT = 5 * 60 * 1000;
+    const POPUP_TIMEOUT = 5 * 60 * 1000;
+    let idleTimer = null, popupTimer = null, countdownInterval = null, isPopupVisible = false;
+    
+    function resetIdleTimer() {
+        if (isPopupVisible) return;
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(showIdlePopup, IDLE_TIMEOUT);
+    }
+    
+    function showIdlePopup() {
+        isPopupVisible = true;
+        document.getElementById('idleModal').classList.add('show');
+        startCountdown();
+    }
+    
+    function startCountdown() {
+        let timeLeft = POPUP_TIMEOUT / 1000;
+        updateCountdownDisplay(timeLeft);
+        countdownInterval = setInterval(function() {
+            timeLeft--;
+            updateCountdownDisplay(timeLeft);
+            if (timeLeft <= 0) closeSession();
+        }, 1000);
+        popupTimer = setTimeout(closeSession, POPUP_TIMEOUT);
+    }
+    
+    function updateCountdownDisplay(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        document.getElementById('countdownTimer').textContent = minutes + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+    
+    function confirmActive() {
+        isPopupVisible = false;
+        document.getElementById('idleModal').classList.remove('show');
+        clearTimeout(popupTimer);
+        clearInterval(countdownInterval);
+        resetIdleTimer();
+    }
+    
+    function closeSession() {
+        clearTimeout(idleTimer); clearTimeout(popupTimer); clearInterval(countdownInterval); clearInterval(heartbeatInterval);
+        window.close();
+        setTimeout(function() {
+            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:sans-serif;color:#1F3144;"><h1>Sessão Encerrada</h1><p>Você pode fechar esta aba.</p></div>';
+        }, 500);
+    }
+    
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function(event) {
+        document.addEventListener(event, resetIdleTimer, { passive: true });
+    });
+    resetIdleTimer();
+    
+    const heartbeatInterval = setInterval(function() {
+        fetch('/heartbeat', { method: 'POST' });
+    }, 1000);
+</script>
+
+<!-- Modal de Inatividade -->
+<div class="idle-modal-overlay" id="idleModal">
+    <div class="idle-modal">
+        <div class="idle-modal-icon"><i class="bi bi-question-circle"></i></div>
+        <h3>Você ainda está aí?</h3>
+        <p>Detectamos que você está inativo há algum tempo.</p>
+        <div class="countdown">A sessão será encerrada em <span id="countdownTimer">5:00</span></div>
+        <div class="idle-modal-buttons">
+            <button class="btn btn-idle-yes" onclick="confirmActive()"><i class="bi bi-check-lg me-2"></i>Sim, estou aqui</button>
+            <button class="btn btn-idle-no" onclick="closeSession()"><i class="bi bi-x-lg me-2"></i>Não, encerrar</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

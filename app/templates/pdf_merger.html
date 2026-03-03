@@ -1,1059 +1,868 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unificador de PDF</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #1F3144;
-            --primary-hover: #152536;
-            --accent-color: #005AFF;
-            --accent-light: #96CBF0;
-            --bg-color: #E3E5EB;
-            --text-dark: #606D7B;
-        }
-        
-        body {
-            background-color: var(--bg-color);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .back-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 20px;
-        }
-        
-        .back-link:hover {
-            color: var(--accent-color);
-        }
-        
-        .merger-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .header-card {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 10px 25px rgba(31, 49, 68, 0.1);
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        
-        .page-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary-color) 0%, #2a4a66 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-        }
-        
-        .page-icon i {
-            font-size: 28px;
-            color: white;
-        }
-        
-        .pdf-grid {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: flex-start;
-        }
-        
-        .pdf-card {
-            width: 200px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            overflow: hidden;
-            position: relative;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-        }
-        
-        .pdf-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-        }
-        
-        .pdf-card.dragging {
-            opacity: 0.4;
-            transform: scale(0.95);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-            pointer-events: none;
-        }
-        
-        .drop-placeholder {
-            width: 200px;
-            height: 280px;
-            background: linear-gradient(135deg, #dbe9f5 0%, #c5dff0 100%);
-            border: 2px dashed var(--accent-color);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            animation: pulse-placeholder 1s ease-in-out infinite;
-        }
-        
-        .drop-placeholder::after {
-            content: 'Soltar aqui';
-            color: var(--primary-color);
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-        
-        @keyframes pulse-placeholder {
-            0%, 100% { opacity: 0.7; }
-            50% { opacity: 1; }
-        }
-        
-        .pdf-placeholder {
-            width: 200px;
-            height: 280px;
-            background: white;
-            border: 2px dashed #ccc;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .pdf-placeholder:hover {
-            border-color: var(--accent-color);
-            background-color: #dbe9f5;
-        }
-        
-        .pdf-placeholder .plus-circle {
-            width: 60px;
-            height: 60px;
-            border: 3px solid #ccc;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
-        }
-        
-        .pdf-placeholder:hover .plus-circle {
-            border-color: var(--accent-color);
-            background-color: var(--accent-color);
-        }
-        
-        .pdf-placeholder .plus-circle i {
-            font-size: 30px;
-            color: #ccc;
-            transition: color 0.3s ease;
-        }
-        
-        .pdf-placeholder:hover .plus-circle i {
-            color: white;
-        }
-        
-        .pdf-placeholder span {
-            color: var(--text-dark);
-            font-size: 0.9rem;
-        }
-        
-        .pdf-preview {
-            width: 100%;
-            height: 220px;
-            background-color: #f5f5f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            cursor: grab;
-        }
-        
-        .pdf-card:active .pdf-preview,
-        .pdf-card.dragging .pdf-preview {
-            cursor: grabbing;
-        }
-        
-        .pdf-preview img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            pointer-events: none;
-        }
-        
-        .drag-handle {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 24px;
-            background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-        
-        .pdf-card:hover .drag-handle {
-            opacity: 1;
-        }
-        
-        .drag-handle i {
-            color: var(--text-dark);
-            font-size: 14px;
-        }
-        
-        .pdf-actions {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            display: flex;
-            gap: 5px;
-        }
-        
-        .pdf-action-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .pdf-action-btn.rotate-btn {
-            background-color: rgba(255,255,255,0.95);
-            color: #555;
-        }
-        
-        .pdf-action-btn.rotate-btn:hover {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .pdf-action-btn.delete-btn {
-            background-color: rgba(255,255,255,0.95);
-            color: #dc3545;
-        }
-        
-        .pdf-action-btn.delete-btn:hover {
-            background-color: #dc3545;
-            color: white;
-        }
-        
-        .pdf-order {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            width: 28px;
-            height: 28px;
-            background-color: var(--primary-color);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        
-        .pdf-info {
-            padding: 12px;
-            border-top: 1px solid #eee;
-        }
-        
-        .pdf-filename {
-            font-size: 0.85rem;
-            color: #333;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            display: block;
-        }
-        
-        .pdf-pages {
-            font-size: 0.75rem;
-            color: #888;
-            margin-top: 3px;
-        }
-        
-        .merge-section {
-            background: white;
-            border-radius: 15px;
-            padding: 2rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            margin-top: 30px;
-            text-align: center;
-        }
-        
-        .btn-merge {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 12px 40px;
-            font-size: 1.1rem;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-merge:hover:not(:disabled) {
-            background-color: var(--accent-color);
-            color: white;
-            transform: translateY(-2px);
-        }
-        
-        .btn-merge:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        
-        .info-text {
-            color: var(--text-dark);
-            font-size: 0.9rem;
-            margin-top: 15px;
-        }
-        
-        .info-text i {
-            color: var(--accent-color);
-        }
-        
-        /* Modal de confirmação */
-        .modal-confirm .modal-header {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-        
-        .modal-confirm .modal-footer {
-            border-top: none;
-        }
-        
-        .modal-confirm .modal-body {
-            text-align: center;
-            padding: 20px 30px;
-        }
-        
-        .modal-confirm .modal-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary-color) 0%, #2a4a66 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-        
-        .modal-confirm .modal-icon i {
-            font-size: 40px;
-            color: white;
-        }
-        
-        .btn-confirm {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-        }
-        
-        .btn-confirm:hover {
-            background-color: var(--accent-color);
-            color: white;
-        }
-        
-        /* Loading overlay */
-        .loading-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255,255,255,0.9);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        
-        .loading-overlay.show {
-            display: flex;
-        }
-        
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid #e9ecef;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .loading-text {
-            margin-top: 20px;
-            color: #333;
-            font-size: 1.1rem;
-        }
-        
-        /* Rotation indicator */
-        .rotation-indicator {
-            position: absolute;
-            bottom: 8px;
-            left: 8px;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            display: none;
-        }
-        
-        .rotation-indicator.show {
-            display: block;
-        }
-        
-        /* Modal de inatividade */
-        .idle-modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(31, 49, 68, 0.8);
-            z-index: 99999;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .idle-modal-overlay.show {
-            display: flex;
-        }
-        
-        .idle-modal {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: idleModalPop 0.3s ease;
-        }
-        
-        @keyframes idleModalPop {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        
-        .idle-modal-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-        
-        .idle-modal-icon i { font-size: 36px; color: white; }
-        .idle-modal h3 { color: var(--primary-color); margin-bottom: 10px; font-weight: 600; }
-        .idle-modal > p { color: var(--text-dark); margin-bottom: 25px; }
-        .idle-modal .countdown { font-size: 0.9rem; color: #A2A9B1; margin-bottom: 20px; }
-        .idle-modal .countdown span { font-weight: 600; color: #E17D28; }
-        .idle-modal-buttons { display: flex; gap: 15px; justify-content: center; }
-        .idle-modal-buttons .btn { padding: 12px 30px; border-radius: 8px; font-weight: 500; }
-        .btn-idle-yes { background-color: var(--primary-color); color: white; border: none; }
-        .btn-idle-yes:hover { background-color: var(--accent-color); color: white; }
-        .btn-idle-no { background-color: transparent; color: var(--text-dark); border: 2px solid #ddd; }
-        .btn-idle-no:hover { background-color: #f5f5f5; border-color: #ccc; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Unificando PDFs...</div>
+{% block title %}Mesclar PDFs{% endblock %}
+
+{% block container_class %}container-fluid{% endblock %}
+
+{% block inline_css %}
+/* Layout responsivo expandido */
+.merger-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+@media (min-width: 992px) {
+    .merger-layout {
+        grid-template-columns: 300px 1fr;
+    }
+}
+
+/* Painel lateral */
+.sidebar-panel {
+    background: var(--bg-white);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-lg);
+    height: fit-content;
+    position: sticky;
+    top: 20px;
+}
+
+/* Área principal de PDFs */
+.main-panel {
+    background: var(--bg-white);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-lg);
+    min-height: 500px;
+}
+
+/* Container de cards */
+.pdf-cards-container {
+    min-height: 400px;
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+    border: 2px dashed #ddd;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.pdf-cards-container.drag-over {
+    border-color: var(--primary-color);
+    background-color: var(--bg-info);
+    transform: scale(1.01);
+}
+
+.pdf-cards-container.has-items {
+    border-style: solid;
+    border-color: #e0e0e0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--spacing-md);
+    align-content: start;
+}
+
+/* Card individual de PDF */
+.pdf-card {
+    position: relative;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm);
+    cursor: grab;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+}
+
+.pdf-card:hover {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.pdf-card.dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+    transform: scale(0.95);
+    border-color: var(--accent-color);
+    box-shadow: var(--shadow-xl);
+    z-index: 1000;
+}
+
+.pdf-card.drag-over-card {
+    border-color: var(--accent-color);
+    background-color: var(--bg-info);
+    transform: scale(1.05);
+    box-shadow: 0 0 0 3px rgba(0, 102, 179, 0.3);
+}
+
+/* Placeholder durante drag */
+.pdf-card-placeholder {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border: 2px dashed var(--primary-color);
+    border-radius: var(--radius-md);
+    opacity: 0.7;
+}
+
+/* Preview do PDF */
+.pdf-card-preview {
+    width: 100%;
+    aspect-ratio: 3/4;
+    max-height: 200px;
+    background-color: #f5f5f5;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--spacing-sm);
+    position: relative;
+}
+
+.pdf-card-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: white;
+    transition: transform 0.3s ease;
+}
+
+.pdf-card-preview img.rotate-90 {
+    transform: rotate(90deg);
+}
+
+.pdf-card-preview img.rotate-180 {
+    transform: rotate(180deg);
+}
+
+.pdf-card-preview img.rotate-270 {
+    transform: rotate(270deg);
+}
+
+.pdf-card-preview .preview-placeholder {
+    font-size: 3rem;
+    color: #dc3545;
+    opacity: 0.5;
+}
+
+.pdf-card-preview .preview-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Informações do PDF */
+.pdf-card-info {
+    width: 100%;
+    text-align: center;
+}
+
+.pdf-card-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    margin-bottom: 2px;
+}
+
+.pdf-card-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Ações do card */
+.pdf-card-actions {
+    display: flex;
+    gap: 5px;
+    margin-top: var(--spacing-sm);
+    width: 100%;
+    justify-content: center;
+}
+
+.pdf-card-actions .btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    flex: 1;
+    max-width: 45px;
+}
+
+/* Número de ordem */
+.pdf-card-order {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    width: 26px;
+    height: 26px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    z-index: 10;
+    box-shadow: var(--shadow-md);
+}
+
+/* Badge de rotação */
+.pdf-card-rotation {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #ffc107;
+    color: #333;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    z-index: 10;
+}
+
+/* Estado vazio */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-xl) var(--spacing-lg);
+    color: var(--text-muted);
+    grid-column: 1 / -1;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.3;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Barra de estatísticas */
+.stats-bar {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--bg-info);
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--spacing-md);
+    font-size: 0.85rem;
+}
+
+.stats-bar span {
+    white-space: nowrap;
+}
+
+/* Opções de saída */
+.output-options {
+    background-color: #f8f9fa;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.output-options h6 {
+    margin-bottom: var(--spacing-sm);
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+
+/* Zona de drop visual */
+.drop-indicator {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 102, 179, 0.1);
+    border: 4px dashed var(--primary-color);
+    z-index: 9999;
+    pointer-events: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.drop-indicator.show {
+    display: flex;
+}
+
+.drop-indicator-content {
+    background: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-xl);
+    text-align: center;
+    box-shadow: var(--shadow-xl);
+}
+
+.drop-indicator-content i {
+    font-size: 4rem;
+    color: var(--primary-color);
+    display: block;
+    margin-bottom: var(--spacing-md);
+}
+{% endblock %}
+
+{% block content %}
+<div class="drop-indicator" id="drop-indicator">
+    <div class="drop-indicator-content">
+        <i class="bi bi-file-earmark-pdf"></i>
+        <h4>Solte os PDFs aqui</h4>
+    </div>
 </div>
 
-<div class="container merger-container">
-    <a href="/" class="back-link">
-        <i class="bi bi-arrow-left"></i> Voltar ao início
-    </a>
-    
-    <div class="header-card">
+<div class="merger-layout">
+    <!-- Painel Lateral -->
+    <div class="sidebar-panel">
         <div class="page-icon">
             <i class="bi bi-files"></i>
         </div>
-        <h2>Unificador de PDF</h2>
-        <p class="text-muted">Arraste e solte para reordenar os arquivos</p>
-    </div>
-    
-    <div class="pdf-grid" id="pdfGrid">
-        <!-- Placeholder inicial -->
-        <div class="pdf-placeholder" onclick="document.getElementById('fileInput').click()">
-            <div class="plus-circle">
-                <i class="bi bi-plus"></i>
+        <h4 class="text-center mb-3">Mesclar PDFs</h4>
+        
+        <div class="info-box mb-3">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <small>Arraste PDFs para adicionar. Reordene arrastando os cards.</small>
+        </div>
+
+        <div class="mb-3">
+            <input class="form-control" type="file" id="file-input" 
+                   accept=".pdf" multiple style="display: none;">
+            <button type="button" class="btn btn-outline-primary w-100" id="btn-add-files">
+                <i class="bi bi-plus-lg me-2"></i>Adicionar PDFs
+            </button>
+        </div>
+        
+        <div class="stats-bar hidden" id="stats-bar">
+            <span><strong id="total-files">0</strong> arquivos</span>
+            <span><strong id="total-pages">0</strong> páginas</span>
+            <span><strong id="total-size">0 KB</strong></span>
+        </div>
+        
+        <div class="output-options hidden" id="output-options">
+            <h6><i class="bi bi-gear me-2"></i>Opções</h6>
+            <div class="mb-2">
+                <label class="form-label small">Nome do arquivo</label>
+                <input type="text" class="form-control form-control-sm" 
+                       id="output-filename" value="merged" placeholder="Nome">
             </div>
-            <span>Adicionar PDF</span>
+            <div class="mb-3">
+                <label class="form-label small">Compressão</label>
+                <select class="form-select form-select-sm" id="compression-level">
+                    <option value="none">Sem compressão</option>
+                    <option value="low">Baixa</option>
+                    <option value="medium" selected>Média</option>
+                    <option value="high">Alta</option>
+                </select>
+            </div>
+            
+            <button type="button" id="btn-merge" class="btn btn-primary-custom w-100" disabled>
+                <i class="bi bi-download me-2"></i>Mesclar e Baixar
+            </button>
         </div>
     </div>
-    
-    <input type="file" id="fileInput" accept=".pdf" multiple style="display: none;">
-    
-    <div class="merge-section" id="mergeSection" style="display: none;">
-        <button class="btn btn-merge" id="btnMerge" onclick="showConfirmModal()">
-            <i class="bi bi-files me-2"></i>Unificar PDFs
-        </button>
-        <p class="info-text">
-            <i class="bi bi-info-circle me-1"></i>
-            <span id="fileCount">0</span> arquivo(s) selecionado(s)
-        </p>
-    </div>
-</div>
 
-<!-- Modal de Confirmação -->
-<div class="modal fade modal-confirm" id="confirmModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-icon">
-                    <i class="bi bi-files"></i>
-                </div>
-                <h4>Confirmar Unificação</h4>
-                <p class="text-muted">
-                    Você está prestes a unificar <strong id="confirmCount">0</strong> arquivo(s) PDF.<br>
-                    Deseja continuar?
-                </p>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-confirm" onclick="mergePdfs()">
-                    <i class="bi bi-check-lg me-1"></i>Confirmar
+    <!-- Área Principal -->
+    <div class="main-panel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">
+                <i class="bi bi-grid me-2"></i>Arquivos PDF
+            </h5>
+            <div class="hidden" id="toolbar">
+                <button class="btn btn-outline-secondary btn-sm me-2" id="btn-clear-all">
+                    <i class="bi bi-trash me-1"></i>Limpar tudo
                 </button>
             </div>
         </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // Estado dos PDFs
-    let pdfFiles = [];
-    let draggedItem = null;
-    
-    // Input de arquivo
-    const fileInput = document.getElementById('fileInput');
-    const pdfGrid = document.getElementById('pdfGrid');
-    const mergeSection = document.getElementById('mergeSection');
-    
-    fileInput.addEventListener('change', handleFileSelect);
-    
-    function handleFileSelect(event) {
-        const files = Array.from(event.target.files);
         
-        files.forEach(file => {
-            if (file.type === 'application/pdf') {
-                addPdfFile(file);
-            }
-        });
-        
-        // Limpar input para permitir selecionar o mesmo arquivo novamente
-        fileInput.value = '';
-    }
-    
-    async function addPdfFile(file) {
-        const reader = new FileReader();
-        
-        reader.onload = async function(e) {
-            const arrayBuffer = e.target.result;
-            const base64Content = arrayBufferToBase64(arrayBuffer);
-            
-            // Obter preview do servidor
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            try {
-                const response = await fetch('/pdf-merger/preview', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                const pdfData = {
-                    id: Date.now() + Math.random(),
-                    name: file.name,
-                    content: base64Content,
-                    preview: data.preview,
-                    pages: data.pages,
-                    rotation: 0
-                };
-                
-                pdfFiles.push(pdfData);
-                renderPdfGrid();
-            } catch (error) {
-                console.error('Erro ao processar PDF:', error);
-                alert('Erro ao processar o arquivo PDF');
-            }
-        };
-        
-        reader.readAsArrayBuffer(file);
-    }
-    
-    function arrayBufferToBase64(buffer) {
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-    }
-    
-    function renderPdfGrid() {
-        pdfGrid.innerHTML = '';
-        
-        pdfFiles.forEach((pdf, index) => {
-            const card = createPdfCard(pdf, index);
-            pdfGrid.appendChild(card);
-        });
-        
-        // Adicionar placeholder no final
-        const placeholder = document.createElement('div');
-        placeholder.className = 'pdf-placeholder';
-        placeholder.onclick = () => fileInput.click();
-        placeholder.innerHTML = `
-            <div class="plus-circle">
-                <i class="bi bi-plus"></i>
+        <div class="pdf-cards-container" id="pdf-container">
+            <div class="empty-state" id="empty-state">
+                <i class="bi bi-file-earmark-pdf"></i>
+                <p>Arraste PDFs para esta área<br>ou clique em "Adicionar PDFs"</p>
             </div>
-            <span>Adicionar PDF</span>
-        `;
-        pdfGrid.appendChild(placeholder);
-        
-        // Atualizar seção de merge
-        updateMergeSection();
-    }
-    
-    function createPdfCard(pdf, index) {
-        const card = document.createElement('div');
-        card.className = 'pdf-card';
-        card.draggable = true;
-        card.dataset.id = pdf.id;
-        
-        const rotationDegrees = pdf.rotation || 0;
-        const showRotation = rotationDegrees !== 0;
-        
-        card.innerHTML = `
-            <div class="pdf-preview">
-                <span class="pdf-order">${index + 1}</span>
-                <img src="data:image/png;base64,${pdf.preview}" alt="${pdf.name}" style="transform: rotate(${rotationDegrees}deg);">
-                <div class="pdf-actions">
-                    <button class="pdf-action-btn rotate-btn" onclick="event.stopPropagation(); rotatePdf('${pdf.id}')" title="Rotacionar">
-                        <i class="bi bi-arrow-clockwise"></i>
-                    </button>
-                    <button class="pdf-action-btn delete-btn" onclick="event.stopPropagation(); removePdf('${pdf.id}')" title="Remover">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
-                </div>
-                <div class="rotation-indicator ${showRotation ? 'show' : ''}">${rotationDegrees}°</div>
-                <div class="drag-handle" title="Arraste para reordenar">
-                    <i class="bi bi-grip-horizontal"></i>
-                </div>
-            </div>
-            <div class="pdf-info">
-                <span class="pdf-filename" title="${pdf.name}">${pdf.name}</span>
-                <div class="pdf-pages">${pdf.pages} página(s)</div>
-            </div>
-        `;
-        
-        // Eventos de drag and drop
-        card.addEventListener('dragstart', handleDragStart);
-        card.addEventListener('dragend', handleDragEnd);
-        
-        return card;
-    }
-    
-    let dropPlaceholder = null;
-    let draggedIndex = -1;
-    let currentDropIndex = -1;
-    
-    function createDropPlaceholder() {
-        const placeholder = document.createElement('div');
-        placeholder.className = 'drop-placeholder';
-        placeholder.addEventListener('dragover', (e) => e.preventDefault());
-        placeholder.addEventListener('drop', handleDrop);
-        return placeholder;
-    }
-    
-    function handleDragStart(e) {
-        draggedItem = this;
-        draggedIndex = pdfFiles.findIndex(p => p.id == this.dataset.id);
-        currentDropIndex = draggedIndex;
-        
-        // Pequeno delay para permitir que o elemento seja renderizado antes de adicionar a classe
-        setTimeout(() => {
-            this.classList.add('dragging');
-        }, 0);
-        
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', this.dataset.id);
-        
-        // Criar placeholder
-        dropPlaceholder = createDropPlaceholder();
-    }
-    
-    function handleDragEnd(e) {
-        this.classList.remove('dragging');
-        
-        // Remover placeholder se existir
-        if (dropPlaceholder && dropPlaceholder.parentNode) {
-            dropPlaceholder.remove();
-        }
-        dropPlaceholder = null;
-        draggedIndex = -1;
-        currentDropIndex = -1;
-    }
-    
-    function handleDrop(e) {
-        e.preventDefault();
-        
-        if (draggedItem && currentDropIndex !== -1 && currentDropIndex !== draggedIndex) {
-            // Reordenar array
-            const [removed] = pdfFiles.splice(draggedIndex, 1);
-            
-            // O currentDropIndex já representa a posição final correta
-            // Se estamos movendo para frente (índice maior), precisamos ajustar
-            // porque o splice removeu um item antes da posição de destino
-            let insertIndex = currentDropIndex;
-            if (draggedIndex < currentDropIndex) {
-                // Não fazemos ajuste aqui - o currentDropIndex já considera os cards excluindo o dragging
-                // Então ele já está na posição correta
-            }
-            
-            pdfFiles.splice(insertIndex, 0, removed);
-            renderPdfGrid();
-        }
-        
-        // Limpar
-        if (dropPlaceholder && dropPlaceholder.parentNode) {
-            dropPlaceholder.remove();
-        }
-        dropPlaceholder = null;
-        draggedIndex = -1;
-        currentDropIndex = -1;
-        
-        if (draggedItem) {
-            draggedItem.classList.remove('dragging');
-            draggedItem = null;
-        }
-    }
-    
-    // Evento de dragover no grid para detectar posição
-    pdfGrid.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        
-        if (!draggedItem || !dropPlaceholder) return;
-        
-        const cards = Array.from(pdfGrid.querySelectorAll('.pdf-card:not(.dragging)'));
-        const placeholder = pdfGrid.querySelector('.pdf-placeholder');
-        
-        // Encontrar a posição mais próxima usando distância euclidiana (considera X e Y)
-        let closestCard = null;
-        let closestDistance = Infinity;
-        let insertBefore = true;
-        
-        cards.forEach((card, index) => {
-            const rect = card.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            
-            // Distância do mouse ao centro do card
-            const distanceToCenter = Math.sqrt(
-                Math.pow(e.clientX - centerX, 2) + 
-                Math.pow(e.clientY - centerY, 2)
-            );
-            
-            // Verificar se o mouse está na mesma "linha" (com tolerância de altura)
-            const isInSameRow = Math.abs(e.clientY - centerY) < rect.height / 2;
-            
-            if (isInSameRow) {
-                // Se está na mesma linha, usar posição X para determinar antes/depois
-                const offsetX = e.clientX - centerX;
-                
-                if (distanceToCenter < closestDistance) {
-                    closestDistance = distanceToCenter;
-                    closestCard = card;
-                    insertBefore = offsetX < 0;
-                }
-            } else {
-                // Se está em linha diferente, considerar a distância vertical também
-                // Mouse acima do card = inserir antes, abaixo = depois
-                const offsetY = e.clientY - centerY;
-                
-                if (distanceToCenter < closestDistance) {
-                    closestDistance = distanceToCenter;
-                    closestCard = card;
-                    
-                    // Se o mouse está acima do card, inserir antes
-                    // Se está abaixo, inserir depois
-                    if (offsetY < 0) {
-                        insertBefore = true;
-                    } else {
-                        insertBefore = false;
-                    }
-                }
-            }
-        });
-        
-        // Se não encontrou card próximo, verificar se está após o último card da linha
-        if (!closestCard && cards.length > 0) {
-            // Encontrar o card mais próximo considerando apenas proximidade
-            let minDist = Infinity;
-            cards.forEach((card) => {
-                const rect = card.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                const dist = Math.sqrt(
-                    Math.pow(e.clientX - centerX, 2) + 
-                    Math.pow(e.clientY - centerY, 2)
-                );
-                if (dist < minDist) {
-                    minDist = dist;
-                    closestCard = card;
-                    // Determinar se inserir antes ou depois com base na posição X
-                    insertBefore = e.clientX < centerX;
-                }
-            });
-        }
-        
-        // Remover placeholder atual
-        if (dropPlaceholder.parentNode) {
-            dropPlaceholder.remove();
-        }
-        
-        // Inserir placeholder na nova posição
-        if (closestCard) {
-            if (insertBefore) {
-                closestCard.parentNode.insertBefore(dropPlaceholder, closestCard);
-            } else {
-                closestCard.parentNode.insertBefore(dropPlaceholder, closestCard.nextSibling);
-            }
-            
-            // Calcular novo índice
-            const allCards = Array.from(pdfGrid.querySelectorAll('.pdf-card:not(.dragging)'));
-            const placeholderIndex = Array.from(pdfGrid.children).indexOf(dropPlaceholder);
-            
-            // Contar quantos cards vêm antes do placeholder
-            let newIndex = 0;
-            for (const child of pdfGrid.children) {
-                if (child === dropPlaceholder) break;
-                if (child.classList.contains('pdf-card') && !child.classList.contains('dragging')) {
-                    newIndex++;
-                }
-            }
-            currentDropIndex = newIndex;
-        } else if (cards.length === 0) {
-            // Não há cards, inserir antes do placeholder de adicionar
-            if (placeholder) {
-                pdfGrid.insertBefore(dropPlaceholder, placeholder);
-            }
-            currentDropIndex = 0;
-        } else {
-            // Inserir no início
-            pdfGrid.insertBefore(dropPlaceholder, pdfGrid.firstChild);
-            currentDropIndex = 0;
-        }
-    });
-    
-    pdfGrid.addEventListener('drop', handleDrop);
-    
-    pdfGrid.addEventListener('dragleave', function(e) {
-        // Verificar se realmente saiu do grid
-        const rect = pdfGrid.getBoundingClientRect();
-        if (e.clientX < rect.left || e.clientX > rect.right || 
-            e.clientY < rect.top || e.clientY > rect.bottom) {
-            if (dropPlaceholder && dropPlaceholder.parentNode) {
-                dropPlaceholder.remove();
-            }
-        }
-    });
-    
-    function rotatePdf(id) {
-        const pdf = pdfFiles.find(p => p.id == id);
-        if (pdf) {
-            pdf.rotation = (pdf.rotation + 90) % 360;
-            renderPdfGrid();
-        }
-    }
-    
-    function removePdf(id) {
-        pdfFiles = pdfFiles.filter(p => p.id != id);
-        renderPdfGrid();
-    }
-    
-    function updateMergeSection() {
-        const count = pdfFiles.length;
-        document.getElementById('fileCount').textContent = count;
-        document.getElementById('confirmCount').textContent = count;
-        
-        if (count >= 2) {
-            mergeSection.style.display = 'block';
-        } else {
-            mergeSection.style.display = 'none';
-        }
-    }
-    
-    function showConfirmModal() {
-        const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-        modal.show();
-    }
-    
-    async function mergePdfs() {
-        // Fechar modal
-        bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-        
-        // Mostrar loading
-        document.getElementById('loadingOverlay').classList.add('show');
-        
-        try {
-            const response = await fetch('/pdf-merger/merge', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    files: pdfFiles.map(pdf => ({
-                        content: pdf.content,
-                        rotation: pdf.rotation
-                    }))
-                })
-            });
-            
-            if (response.ok) {
-                // Baixar o arquivo
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'documento_unificado.pdf';
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                a.remove();
-                
-                // Limpar lista após sucesso
-                pdfFiles = [];
-                renderPdfGrid();
-            } else {
-                const error = await response.json();
-                alert('Erro ao unificar PDFs: ' + (error.error || 'Erro desconhecido'));
-            }
-        } catch (error) {
-            console.error('Erro:', error);
-            alert('Erro ao unificar PDFs');
-        } finally {
-            document.getElementById('loadingOverlay').classList.remove('show');
-        }
-    }
-    
-    // Heartbeat
-    const heartbeatInterval = setInterval(function() {
-        fetch('/heartbeat', { method: 'POST' });
-    }, 1000);
-    
-    // === Sistema de detecção de inatividade ===
-    const IDLE_TIMEOUT = 5 * 60 * 1000;
-    const POPUP_TIMEOUT = 5 * 60 * 1000;
-    let idleTimer = null, popupTimer = null, countdownInterval = null, isPopupVisible = false;
-    
-    function resetIdleTimer() {
-        if (isPopupVisible) return;
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(showIdlePopup, IDLE_TIMEOUT);
-    }
-    
-    function showIdlePopup() {
-        isPopupVisible = true;
-        document.getElementById('idleModal').classList.add('show');
-        startIdleCountdown();
-    }
-    
-    function startIdleCountdown() {
-        let timeLeft = POPUP_TIMEOUT / 1000;
-        updateIdleCountdownDisplay(timeLeft);
-        countdownInterval = setInterval(function() {
-            timeLeft--;
-            updateIdleCountdownDisplay(timeLeft);
-            if (timeLeft <= 0) closeSession();
-        }, 1000);
-        popupTimer = setTimeout(closeSession, POPUP_TIMEOUT);
-    }
-    
-    function updateIdleCountdownDisplay(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        document.getElementById('countdownTimer').textContent = minutes + ':' + (secs < 10 ? '0' : '') + secs;
-    }
-    
-    function confirmActive() {
-        isPopupVisible = false;
-        document.getElementById('idleModal').classList.remove('show');
-        clearTimeout(popupTimer);
-        clearInterval(countdownInterval);
-        resetIdleTimer();
-    }
-    
-    function closeSession() {
-        clearTimeout(idleTimer); clearTimeout(popupTimer); clearInterval(countdownInterval); clearInterval(heartbeatInterval);
-        window.close();
-        setTimeout(function() {
-            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:sans-serif;color:#1F3144;"><h1>Sessão Encerrada</h1><p>Você pode fechar esta aba.</p></div>';
-        }, 500);
-    }
-    
-    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function(event) {
-        document.addEventListener(event, resetIdleTimer, { passive: true });
-    });
-    resetIdleTimer();
-    
-    // Inicializar
-    renderPdfGrid();
-</script>
-
-<!-- Modal de Inatividade -->
-<div class="idle-modal-overlay" id="idleModal">
-    <div class="idle-modal">
-        <div class="idle-modal-icon"><i class="bi bi-question-circle"></i></div>
-        <h3>Você ainda está aí?</h3>
-        <p>Detectamos que você está inativo há algum tempo.</p>
-        <div class="countdown">A sessão será encerrada em <span id="countdownTimer">5:00</span></div>
-        <div class="idle-modal-buttons">
-            <button class="btn btn-idle-yes" onclick="confirmActive()"><i class="bi bi-check-lg me-2"></i>Sim, estou aqui</button>
-            <button class="btn btn-idle-no" onclick="closeSession()"><i class="bi bi-x-lg me-2"></i>Não, encerrar</button>
         </div>
     </div>
 </div>
-</body>
-</html>
+{% endblock %}
+
+{% block inline_js %}
+const fileInput = document.getElementById('file-input');
+const btnAddFiles = document.getElementById('btn-add-files');
+const pdfContainer = document.getElementById('pdf-container');
+const emptyState = document.getElementById('empty-state');
+const statsBar = document.getElementById('stats-bar');
+const outputOptions = document.getElementById('output-options');
+const btnMerge = document.getElementById('btn-merge');
+const toolbar = document.getElementById('toolbar');
+const dropIndicator = document.getElementById('drop-indicator');
+
+let pdfFiles = []; // Array de { id, file, name, size, pages, rotation, preview }
+
+// ==================== FILE INPUT ====================
+
+btnAddFiles.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', handleFileSelect);
+
+function handleFileSelect(e) {
+    const files = Array.from(e.target.files).filter(f => f.type === 'application/pdf');
+    addFiles(files);
+    e.target.value = '';
+}
+
+// ==================== DRAG & DROP FILES (Externos) ====================
+
+let dragEnterCounter = 0;
+
+document.body.addEventListener('dragenter', (e) => {
+    if (e.dataTransfer.types.includes('Files')) {
+        e.preventDefault();
+        dragEnterCounter++;
+        dropIndicator.classList.add('show');
+    }
+});
+
+document.body.addEventListener('dragleave', (e) => {
+    dragEnterCounter--;
+    if (dragEnterCounter <= 0) {
+        dragEnterCounter = 0;
+        dropIndicator.classList.remove('show');
+    }
+});
+
+document.body.addEventListener('dragover', (e) => {
+    if (e.dataTransfer.types.includes('Files')) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    }
+});
+
+document.body.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragEnterCounter = 0;
+    dropIndicator.classList.remove('show');
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+        if (files.length > 0) {
+            addFiles(files);
+        }
+    }
+});
+
+// ==================== ADD FILES ====================
+
+async function addFiles(files) {
+    for (const file of files) {
+        const pdfData = {
+            id: `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            file: file,
+            name: file.name,
+            size: file.size,
+            pages: 1,
+            rotation: 0,
+            preview: null
+        };
+        
+        pdfFiles.push(pdfData);
+        renderCards();
+        updateStats();
+        
+        // Carregar preview assíncrono
+        loadPreview(pdfData);
+    }
+}
+
+async function loadPreview(pdfData) {
+    try {
+        const info = await PdfApi.getMergePreview(pdfData.file);
+        pdfData.pages = info.pages || 1;
+        pdfData.preview = info.preview || null;
+        
+        // Atualizar apenas este card
+        const card = document.querySelector(`[data-id="${pdfData.id}"]`);
+        if (card) {
+            updateCardPreview(card, pdfData);
+        }
+        updateStats();
+    } catch (error) {
+        console.error('Erro ao obter preview:', error);
+        const card = document.querySelector(`[data-id="${pdfData.id}"]`);
+        if (card) {
+            const previewEl = card.querySelector('.pdf-card-preview');
+            previewEl.innerHTML = '<i class="bi bi-file-earmark-pdf preview-placeholder"></i>';
+        }
+    }
+}
+
+function updateCardPreview(card, pdfData) {
+    const previewEl = card.querySelector('.pdf-card-preview');
+    const metaEl = card.querySelector('.pdf-card-meta');
+    
+    if (pdfData.preview) {
+        const rotateClass = pdfData.rotation ? `rotate-${pdfData.rotation}` : '';
+        previewEl.innerHTML = `<img src="data:image/png;base64,${pdfData.preview}" alt="Preview" class="${rotateClass}">`;
+    } else {
+        previewEl.innerHTML = '<i class="bi bi-file-earmark-pdf preview-placeholder"></i>';
+    }
+    
+    metaEl.textContent = `${pdfData.pages} ${pdfData.pages === 1 ? 'página' : 'páginas'} • ${Utils.formatSize(pdfData.size)}`;
+}
+
+// ==================== RENDER CARDS ====================
+
+function renderCards() {
+    pdfContainer.querySelectorAll('.pdf-card').forEach(c => c.remove());
+    
+    if (pdfFiles.length === 0) {
+        emptyState.style.display = 'block';
+        pdfContainer.classList.remove('has-items');
+        statsBar.classList.add('hidden');
+        outputOptions.classList.add('hidden');
+        toolbar.classList.add('hidden');
+        btnMerge.disabled = true;
+        return;
+    }
+    
+    emptyState.style.display = 'none';
+    pdfContainer.classList.add('has-items');
+    statsBar.classList.remove('hidden');
+    outputOptions.classList.remove('hidden');
+    toolbar.classList.remove('hidden');
+    btnMerge.disabled = pdfFiles.length < 2;
+    
+    pdfFiles.forEach((pdf, index) => {
+        const card = createCard(pdf, index);
+        pdfContainer.appendChild(card);
+    });
+    
+    // Inicializar sortable após renderizar
+    initSortable();
+}
+
+function createCard(pdf, index) {
+    const card = document.createElement('div');
+    card.className = 'pdf-card';
+    card.dataset.id = pdf.id;
+    card.dataset.index = index;
+    
+    const rotateClass = pdf.rotation ? `rotate-${pdf.rotation}` : '';
+    const previewContent = pdf.preview 
+        ? `<img src="data:image/png;base64,${pdf.preview}" alt="Preview" class="${rotateClass}">`
+        : '<div class="preview-loading"><span class="loading-spinner"></span></div>';
+    
+    card.innerHTML = `
+        <div class="pdf-card-order">${index + 1}</div>
+        ${pdf.rotation !== 0 ? `<div class="pdf-card-rotation">${pdf.rotation}°</div>` : ''}
+        <div class="pdf-card-preview">
+            ${previewContent}
+        </div>
+        <div class="pdf-card-info">
+            <div class="pdf-card-name" title="${pdf.name}">${pdf.name}</div>
+            <div class="pdf-card-meta">
+                ${pdf.pages} ${pdf.pages === 1 ? 'página' : 'páginas'} • ${Utils.formatSize(pdf.size)}
+            </div>
+        </div>
+        <div class="pdf-card-actions">
+            <button type="button" class="btn btn-outline-secondary btn-sm btn-rotate" title="Rotacionar 90°">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm btn-remove" title="Remover">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    // Event listeners para botões
+    card.querySelector('.btn-rotate').addEventListener('click', (e) => {
+        e.stopPropagation();
+        rotateCard(pdf.id);
+    });
+    card.querySelector('.btn-remove').addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeCard(pdf.id);
+    });
+    
+    return card;
+}
+
+// ==================== SORTABLE (Reordenação via mouse) ====================
+
+let sortableState = {
+    isDragging: false,
+    draggedCard: null,
+    draggedId: null,
+    placeholder: null,
+    startX: 0,
+    startY: 0,
+    offsetX: 0,
+    offsetY: 0
+};
+
+function initSortable() {
+    const cards = pdfContainer.querySelectorAll('.pdf-card');
+    
+    cards.forEach(card => {
+        card.addEventListener('mousedown', onMouseDown);
+        card.addEventListener('touchstart', onTouchStart, { passive: false });
+    });
+}
+
+function onMouseDown(e) {
+    // Ignorar cliques nos botões
+    if (e.target.closest('.pdf-card-actions')) return;
+    
+    e.preventDefault();
+    startDrag(this, e.clientX, e.clientY);
+    
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+}
+
+function onTouchStart(e) {
+    if (e.target.closest('.pdf-card-actions')) return;
+    
+    e.preventDefault();
+    const touch = e.touches[0];
+    startDrag(this, touch.clientX, touch.clientY);
+    
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
+}
+
+function startDrag(card, clientX, clientY) {
+    const rect = card.getBoundingClientRect();
+    
+    sortableState.isDragging = true;
+    sortableState.draggedCard = card;
+    sortableState.draggedId = card.dataset.id;
+    sortableState.startX = clientX;
+    sortableState.startY = clientY;
+    sortableState.offsetX = clientX - rect.left;
+    sortableState.offsetY = clientY - rect.top;
+    
+    // Criar placeholder
+    sortableState.placeholder = document.createElement('div');
+    sortableState.placeholder.className = 'pdf-card-placeholder';
+    sortableState.placeholder.style.width = rect.width + 'px';
+    sortableState.placeholder.style.height = rect.height + 'px';
+    
+    // Estilizar card arrastado
+    card.classList.add('dragging');
+    card.style.position = 'fixed';
+    card.style.zIndex = '9999';
+    card.style.width = rect.width + 'px';
+    card.style.left = (clientX - sortableState.offsetX) + 'px';
+    card.style.top = (clientY - sortableState.offsetY) + 'px';
+    card.style.pointerEvents = 'none';
+    
+    // Inserir placeholder
+    card.parentNode.insertBefore(sortableState.placeholder, card);
+    document.body.appendChild(card);
+}
+
+function onMouseMove(e) {
+    if (!sortableState.isDragging) return;
+    moveDrag(e.clientX, e.clientY);
+}
+
+function onTouchMove(e) {
+    if (!sortableState.isDragging) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    moveDrag(touch.clientX, touch.clientY);
+}
+
+function moveDrag(clientX, clientY) {
+    const card = sortableState.draggedCard;
+    
+    // Mover card
+    card.style.left = (clientX - sortableState.offsetX) + 'px';
+    card.style.top = (clientY - sortableState.offsetY) + 'px';
+    
+    // Encontrar card sob o cursor
+    const elemBelow = document.elementFromPoint(clientX, clientY);
+    const targetCard = elemBelow?.closest('.pdf-card:not(.dragging)');
+    
+    if (targetCard && targetCard !== sortableState.placeholder) {
+        const targetRect = targetCard.getBoundingClientRect();
+        const targetMiddle = targetRect.left + targetRect.width / 2;
+        
+        if (clientX < targetMiddle) {
+            targetCard.parentNode.insertBefore(sortableState.placeholder, targetCard);
+        } else {
+            targetCard.parentNode.insertBefore(sortableState.placeholder, targetCard.nextSibling);
+        }
+    }
+}
+
+function onMouseUp(e) {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    endDrag();
+}
+
+function onTouchEnd(e) {
+    document.removeEventListener('touchmove', onTouchMove);
+    document.removeEventListener('touchend', onTouchEnd);
+    endDrag();
+}
+
+function endDrag() {
+    if (!sortableState.isDragging) return;
+    
+    const card = sortableState.draggedCard;
+    const placeholder = sortableState.placeholder;
+    
+    // Resetar estilos do card
+    card.classList.remove('dragging');
+    card.style.position = '';
+    card.style.zIndex = '';
+    card.style.width = '';
+    card.style.left = '';
+    card.style.top = '';
+    card.style.pointerEvents = '';
+    
+    // Inserir card na posição do placeholder
+    if (placeholder && placeholder.parentNode) {
+        placeholder.parentNode.insertBefore(card, placeholder);
+        placeholder.remove();
+    }
+    
+    // Atualizar array com nova ordem
+    const newOrder = [];
+    pdfContainer.querySelectorAll('.pdf-card').forEach((c, index) => {
+        const pdf = pdfFiles.find(p => p.id === c.dataset.id);
+        if (pdf) {
+            newOrder.push(pdf);
+            c.dataset.index = index;
+            c.querySelector('.pdf-card-order').textContent = index + 1;
+        }
+    });
+    pdfFiles = newOrder;
+    
+    // Resetar estado
+    sortableState.isDragging = false;
+    sortableState.draggedCard = null;
+    sortableState.draggedId = null;
+    sortableState.placeholder = null;
+}
+
+// ==================== CARD ACTIONS ====================
+
+function rotateCard(id) {
+    const pdf = pdfFiles.find(p => p.id === id);
+    if (pdf) {
+        pdf.rotation = (pdf.rotation + 90) % 360;
+        
+        // Atualizar apenas o card específico sem re-renderizar tudo
+        const card = document.querySelector(`[data-id="${id}"]`);
+        if (card) {
+            // Atualizar badge de rotação
+            let rotationBadge = card.querySelector('.pdf-card-rotation');
+            if (pdf.rotation !== 0) {
+                if (!rotationBadge) {
+                    rotationBadge = document.createElement('div');
+                    rotationBadge.className = 'pdf-card-rotation';
+                    card.appendChild(rotationBadge);
+                }
+                rotationBadge.textContent = pdf.rotation + '°';
+            } else if (rotationBadge) {
+                rotationBadge.remove();
+            }
+            
+            // Atualizar rotação da imagem
+            const img = card.querySelector('.pdf-card-preview img');
+            if (img) {
+                img.className = pdf.rotation ? `rotate-${pdf.rotation}` : '';
+            }
+        }
+    }
+}
+
+function removeCard(id) {
+    pdfFiles = pdfFiles.filter(p => p.id !== id);
+    renderCards();
+    updateStats();
+}
+
+// ==================== STATS ====================
+
+function updateStats() {
+    document.getElementById('total-files').textContent = pdfFiles.length;
+    document.getElementById('total-pages').textContent = pdfFiles.reduce((sum, p) => sum + p.pages, 0);
+    document.getElementById('total-size').textContent = Utils.formatSize(
+        pdfFiles.reduce((sum, p) => sum + p.size, 0)
+    );
+}
+
+// ==================== CLEAR ALL ====================
+
+document.getElementById('btn-clear-all').addEventListener('click', () => {
+    if (confirm('Remover todos os arquivos?')) {
+        pdfFiles = [];
+        renderCards();
+        updateStats();
+    }
+});
+
+// ==================== MERGE ====================
+
+async function mergePdfs() {
+    if (pdfFiles.length < 2) {
+        Utils.showToast('Adicione pelo menos 2 PDFs para mesclar', 'warning');
+        return;
+    }
+    
+    btnMerge.disabled = true;
+    btnMerge.innerHTML = '<span class="loading-spinner me-2"></span>Mesclando...';
+    
+    try {
+        const filesData = await Promise.all(pdfFiles.map(async (pdf) => {
+            const arrayBuffer = await pdf.file.arrayBuffer();
+            const base64 = btoa(
+                new Uint8Array(arrayBuffer)
+                    .reduce((data, byte) => data + String.fromCharCode(byte), '')
+            );
+            return {
+                content: base64,
+                rotation: pdf.rotation
+            };
+        }));
+        
+        const outputFilename = document.getElementById('output-filename').value || 'merged';
+        const compression = document.getElementById('compression-level').value;
+        
+        const { blob, filename } = await PdfApi.merge(filesData, {
+            outputFilename: outputFilename,
+            compression: compression
+        });
+        
+        Utils.downloadBlob(blob, filename);
+        Utils.showToast('PDFs mesclados com sucesso!', 'success');
+    } catch (error) {
+        console.error('Erro ao mesclar:', error);
+        Utils.showToast(error.message || 'Erro ao mesclar PDFs', 'error');
+    } finally {
+        btnMerge.disabled = pdfFiles.length < 2;
+        btnMerge.innerHTML = '<i class="bi bi-download me-2"></i>Mesclar e Baixar';
+    }
+}
+
+btnMerge.addEventListener('click', mergePdfs);
+
+// Inicialização
+renderCards();
+{% endblock %}

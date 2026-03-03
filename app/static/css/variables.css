@@ -1,0 +1,65 @@
+/**
+ * CSS Variables - Vestas Love PDF
+ * Design tokens compartilhados por toda a aplicação
+ */
+
+:root {
+    /* Cores primárias */
+    --primary-color: #1F3144;
+    --primary-hover: #152536;
+    --primary-light: #2a4a66;
+    
+    /* Cores de destaque */
+    --accent-color: #005AFF;
+    --accent-light: #96CBF0;
+    --accent-hover: #4BA6F7;
+    
+    /* Cores de status */
+    --highlight-color: #E17D28;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+    
+    /* Cores de fundo */
+    --bg-color: #E3E5EB;
+    --bg-white: #ffffff;
+    --bg-light: #f8f9fa;
+    --bg-info: #dbe9f5;
+    
+    /* Cores de texto */
+    --text-dark: #606D7B;
+    --text-muted: #A2A9B1;
+    --text-primary: var(--primary-color);
+    
+    /* Espaçamentos */
+    --spacing-xs: 5px;
+    --spacing-sm: 10px;
+    --spacing-md: 15px;
+    --spacing-lg: 20px;
+    --spacing-xl: 30px;
+    --spacing-xxl: 40px;
+    
+    /* Border radius */
+    --radius-sm: 8px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 15px;
+    --radius-xxl: 20px;
+    --radius-round: 50%;
+    
+    /* Sombras */
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 5px 20px rgba(31, 49, 68, 0.1);
+    --shadow-lg: 0 10px 25px rgba(31, 49, 68, 0.1);
+    --shadow-xl: 0 15px 35px rgba(31, 49, 68, 0.15);
+    --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.3);
+    
+    /* Transições */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    
+    /* Z-index */
+    --z-dropdown: 1000;
+    --z-modal: 9999;
+}

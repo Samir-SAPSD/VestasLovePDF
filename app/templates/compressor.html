@@ -1,821 +1,351 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compressor de Arquivos</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #1F3144;
-            --primary-hover: #152536;
-            --accent-color: #005AFF;
-            --accent-light: #96CBF0;
-            --bg-color: #E3E5EB;
-            --text-dark: #606D7B;
-        }
-        
-        body {
-            background-color: var(--bg-color);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .back-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 20px;
-        }
-        
-        .back-link:hover {
-            color: var(--accent-color);
-        }
-        
-        .converter-card {
-            max-width: 550px;
-            width: 100%;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(31, 49, 68, 0.1);
-            background: white;
-            margin: 0 auto;
-        }
-        
-        .page-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary-color) 0%, #2a4a66 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-        }
-        
-        .page-icon i {
-            font-size: 28px;
-            color: white;
-        }
-        
-        .btn-compress {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-        }
-        
-        .btn-compress:hover {
-            background-color: var(--accent-color);
-            color: white;
-        }
-        
-        .info-box {
-            background-color: #dbe9f5;
-            border-left: 4px solid var(--accent-color);
-            padding: 12px 15px;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 20px;
-        }
-        
-        .info-box i {
-            color: var(--accent-color);
-        }
-        
-        .format-list {
-            font-size: 0.9rem;
-            color: var(--text-dark);
-        }
-        
-        .format-list strong {
-            color: var(--primary-color);
-        }
-        
-        .quality-slider {
-            display: none;
-        }
-        
-        .quality-value {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        
-        #file-info {
-            display: none;
-            background-color: var(--bg-color);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-        
-        .file-info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .file-info-item:last-child {
-            border-bottom: none;
-        }
-        
-        .estimation-row, .savings-row {
-            background-color: #dbe9f5;
-            margin: 5px -15px;
-            padding: 8px 15px !important;
-        }
-        
-        .savings-row {
-            border-radius: 0 0 8px 8px;
-        }
-        
-        .custom-size-section {
-            background-color: #f0f4ff;
-            border: 1px solid #c5d4f7;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-        
-        .custom-size-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .custom-size-header h6 {
-            margin: 0;
-            color: #3b5998;
-        }
-        
-        .custom-size-toggle {
-            color: var(--primary-color);
-            cursor: pointer;
-            font-size: 0.9rem;
-            text-decoration: underline;
-        }
-        
-        .custom-size-toggle:hover {
-            color: var(--primary-hover);
-        }
-        
-        .target-input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .target-input-group input {
-            flex: 1;
-        }
-        
-        .target-input-group select {
-            width: 80px;
-        }
-        
-        .quality-result {
-            display: none;
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        
-        .quality-result.ok,
-        .quality-result.medium,
-        .quality-result.high,
-        .quality-result.critical {
-            display: block;
-        }
-        
-        .quality-result.ok {
-            background-color: #dbe9f5;
-            border: 1px solid #96CBF0;
-        }
-        
-        .quality-result.medium {
-            background-color: #fff3cd;
-            border: 1px solid #ffeaa8;
-        }
-        
-        .quality-result.high {
-            background-color: #ffe5d0;
-            border: 1px solid #ffcba4;
-        }
-        
-        .quality-result.critical {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-        }
-        
-        .quality-indicator {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
-        }
-        
-        .quality-indicator .bi {
-            font-size: 1.5rem;
-        }
-        
-        .quality-ok { color: #28a745; }
-        .quality-medium { color: #ffc107; }
-        .quality-high { color: #fd7e14; }
-        .quality-critical { color: #dc3545; }
-        
-        .file-type-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .badge-image {
-            background-color: #dbe9f5;
-            color: #1F3144;
-        }
-        
-        .badge-pdf {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        
-        .badge-zip {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        
-        /* Modal de inatividade */
-        .idle-modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(31, 49, 68, 0.8);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .idle-modal-overlay.show {
-            display: flex;
-        }
-        
-        .idle-modal {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalPop 0.3s ease;
-        }
-        
-        @keyframes modalPop {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        
-        .idle-modal-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-        
-        .idle-modal-icon i { font-size: 36px; color: white; }
-        .idle-modal h3 { color: var(--primary-color); margin-bottom: 10px; font-weight: 600; }
-        .idle-modal p { color: var(--text-dark); margin-bottom: 25px; }
-        .idle-modal .countdown { font-size: 0.9rem; color: #A2A9B1; margin-bottom: 20px; }
-        .idle-modal .countdown span { font-weight: 600; color: #E17D28; }
-        .idle-modal-buttons { display: flex; gap: 15px; justify-content: center; }
-        .idle-modal-buttons .btn { padding: 12px 30px; border-radius: 8px; font-weight: 500; }
-        .btn-idle-yes { background-color: var(--primary-color); color: white; border: none; }
-        .btn-idle-yes:hover { background-color: var(--accent-color); color: white; }
-        .btn-idle-no { background-color: transparent; color: var(--text-dark); border: 2px solid #ddd; }
-        .btn-idle-no:hover { background-color: #f5f5f5; border-color: #ccc; }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-<div class="container">
-    <a href="/" class="back-link">
-        <i class="bi bi-arrow-left"></i> Voltar ao início
-    </a>
-    
-    <div class="converter-card">
-        <div class="page-icon">
-            <i class="bi bi-file-zip"></i>
-        </div>
-        <h2 class="text-center mb-4">Compressor de Arquivos</h2>
-        
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-              <div class="alert alert-danger">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
-        
-        <div class="info-box">
-            <i class="bi bi-info-circle me-2"></i>
-            <small>Reduza o tamanho dos seus arquivos mantendo a qualidade.</small>
-        </div>
-        
-        <div class="format-list mb-4">
-            <p class="mb-2"><strong><i class="bi bi-image me-1"></i> Imagens:</strong> JPG, PNG, WebP, BMP, GIF, TIFF</p>
-            <p class="mb-2"><strong><i class="bi bi-file-pdf me-1"></i> Documentos:</strong> PDF</p>
-            <p class="mb-0"><strong><i class="bi bi-file-zip me-1"></i> Outros:</strong> Qualquer arquivo (comprime para ZIP)</p>
-        </div>
+{% block title %}Compressor de Arquivos{% endblock %}
 
-        <form action="/compress" method="post" enctype="multipart/form-data" id="compress-form">
-            <div class="mb-3">
-                <label for="file" class="form-label">Selecione o arquivo</label>
-                <input class="form-control" type="file" id="file" name="file" required onchange="detectFileType(this)">
-            </div>
-            
-            <div id="file-info">
-                <div class="text-center mb-3">
-                    <span class="file-type-badge" id="file-type-badge"></span>
-                </div>
-                <div class="file-info-item">
-                    <span>Arquivo:</span>
-                    <span id="file-name"></span>
-                </div>
-                <div class="file-info-item">
-                    <span>Tamanho original:</span>
-                    <span id="file-size"></span>
-                </div>
-                <div class="file-info-item">
-                    <span>Método:</span>
-                    <span id="compression-method"></span>
-                </div>
-                <div class="file-info-item estimation-row" id="estimation-row" style="display: none;">
-                    <span>Tamanho estimado:</span>
-                    <span id="estimated-size">
-                        <span class="spinner-border spinner-border-sm" role="status"></span>
-                        Calculando...
-                    </span>
-                </div>
-                <div class="file-info-item savings-row" id="savings-row" style="display: none;">
-                    <span>Economia:</span>
-                    <span id="savings-info" class="text-success fw-bold"></span>
-                </div>
-            </div>
-            
-            <!-- Seção de tamanho personalizado -->
-            <div class="custom-size-section" id="custom-size-section" style="display: none;">
-                <div class="custom-size-header">
-                    <h6><i class="bi bi-bullseye me-2"></i>Quer um tamanho específico?</h6>
-                </div>
-                <p class="text-muted small mb-2">Informe o tamanho final desejado e veja a qualidade necessária:</p>
-                
-                <div class="target-input-group">
-                    <input type="number" class="form-control" id="target-size" placeholder="Ex: 500" min="1" step="1">
-                    <select class="form-select" id="target-unit">
-                        <option value="KB" selected>KB</option>
-                        <option value="MB">MB</option>
-                    </select>
-                    <button type="button" class="btn btn-outline-primary" onclick="calculateTargetQuality()">
-                        <i class="bi bi-calculator"></i>
-                    </button>
-                </div>
-                
-                <div class="quality-result" id="quality-result">
-                    <div class="quality-indicator">
-                        <i class="bi" id="quality-icon"></i>
-                        <div>
-                            <strong id="quality-title">Qualidade necessária</strong>
-                            <div class="small" id="quality-subtitle"></div>
-                        </div>
-                    </div>
-                    <div class="small" id="quality-details"></div>
-                    <div class="mt-2" id="quality-action"></div>
-                </div>
-            </div>
-            
-            <div class="quality-slider mt-3" id="quality-section">
-                <label for="quality" class="form-label">
-                    Qualidade da compressão: <span class="quality-value" id="quality-value">85%</span>
-                </label>
-                <input type="range" class="form-range" id="quality" name="quality" min="10" max="100" value="85" 
-                       oninput="document.getElementById('quality-value').textContent = this.value + '%'">
-                <div class="d-flex justify-content-between">
-                    <small class="text-muted">Menor tamanho</small>
-                    <small class="text-muted">Melhor qualidade</small>
-                </div>
-            </div>
-            
-            <input type="hidden" name="compression_type" id="compression_type" value="auto">
-            
-            <div class="d-grid mt-4">
-                <button type="submit" id="btn-compress" class="btn btn-compress btn-lg" disabled>
-                    <i class="bi bi-download me-2"></i>Comprimir e Baixar
-                </button>
-            </div>
-        </form>
-        
-        <p class="text-muted mt-4 text-center small">
-            O arquivo comprimido será baixado automaticamente.
-        </p>
+{% block inline_css %}
+.quality-slider {
+    display: none;
+}
+
+.quality-value {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.estimation-row, .savings-row {
+    background-color: var(--bg-info);
+    margin: 5px -15px;
+    padding: 8px 15px !important;
+}
+
+.savings-row {
+    border-radius: 0 0 8px 8px;
+}
+
+.custom-size-section {
+    background-color: #f0f4ff;
+    border: 1px solid #c5d4f7;
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.custom-size-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.custom-size-header h6 {
+    margin: 0;
+    color: #3b5998;
+}
+
+.custom-size-toggle {
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: underline;
+}
+
+.target-input-group {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.target-input-group input {
+    flex: 1;
+}
+
+.target-input-group select {
+    width: 80px;
+}
+
+.quality-result {
+    display: none;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.quality-result.show {
+    display: block;
+}
+
+.quality-result.ok {
+    background-color: var(--bg-info);
+    border: 1px solid var(--accent-light);
+}
+
+.quality-result.medium {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+}
+
+.quality-result.critical {
+    background-color: #f8d7da;
+    border: 1px solid #dc3545;
+}
+{% endblock %}
+
+{% block content %}
+<div class="main-card">
+    <div class="page-icon">
+        <i class="bi bi-file-zip"></i>
     </div>
-</div>
+    <h2 class="text-center mb-4">Compressor de Arquivos</h2>
+    
+    <div class="info-box">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <strong>Formatos suportados:</strong>
+        <div class="format-list mt-2">
+            <strong>Imagens:</strong> JPG, PNG, WebP, BMP, GIF, TIFF<br>
+            <strong>PDF:</strong> Comprime imagens internas<br>
+            <strong>Outros:</strong> Qualquer arquivo (comprime para ZIP)
+        </div>
+    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    function formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        else if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-        else return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
-    }
-    
-    function detectFileType(input) {
-        const fileInfo = document.getElementById('file-info');
-        const qualitySection = document.getElementById('quality-section');
-        const btnCompress = document.getElementById('btn-compress');
-        const fileTypeBadge = document.getElementById('file-type-badge');
-        const fileName = document.getElementById('file-name');
-        const fileSize = document.getElementById('file-size');
-        const compressionMethod = document.getElementById('compression-method');
-        const compressionType = document.getElementById('compression_type');
-        const estimationRow = document.getElementById('estimation-row');
-        const savingsRow = document.getElementById('savings-row');
-        const estimatedSize = document.getElementById('estimated-size');
-        const savingsInfo = document.getElementById('savings-info');
+    <form id="compressForm">
+        <div class="mb-3">
+            <label for="file" class="form-label">Selecione o arquivo</label>
+            <input class="form-control" type="file" id="file" name="file" required>
+        </div>
         
-        if (!input.files || input.files.length === 0) {
-            fileInfo.style.display = 'none';
-            qualitySection.style.display = 'none';
-            btnCompress.disabled = true;
-            return;
-        }
-        
-        const file = input.files[0];
-        const ext = file.name.split('.').pop().toLowerCase();
-        
-        // Imagens
-        const imageExts = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'tiff', 'tif'];
-        // PDF
-        const pdfExts = ['pdf'];
-        
-        fileName.textContent = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
-        fileSize.textContent = formatFileSize(file.size);
-        
-        // Resetar estimativa
-        estimationRow.style.display = 'flex';
-        savingsRow.style.display = 'none';
-        estimatedSize.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Calculando...';
-        
-        if (imageExts.includes(ext)) {
-            fileTypeBadge.textContent = 'Imagem';
-            fileTypeBadge.className = 'file-type-badge badge-image';
-            compressionMethod.textContent = 'Otimização de imagem';
-            compressionType.value = 'image';
-            qualitySection.style.display = 'block';
-        } else if (pdfExts.includes(ext)) {
-            fileTypeBadge.textContent = 'PDF';
-            fileTypeBadge.className = 'file-type-badge badge-pdf';
-            compressionMethod.textContent = 'Otimização de PDF';
-            compressionType.value = 'pdf';
-            qualitySection.style.display = 'none';
-        } else {
-            fileTypeBadge.textContent = 'Arquivo';
-            fileTypeBadge.className = 'file-type-badge badge-zip';
-            compressionMethod.textContent = 'Compressão ZIP';
-            compressionType.value = 'zip';
-            qualitySection.style.display = 'none';
-        }
-        
-        fileInfo.style.display = 'block';
-        btnCompress.disabled = false;
-        
-        // Estimar compressão
-        estimateCompression(file);
-    }
-    
-    function estimateCompression(file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('quality', document.getElementById('quality').value);
-        
-        const estimatedSize = document.getElementById('estimated-size');
-        const savingsRow = document.getElementById('savings-row');
-        const savingsInfo = document.getElementById('savings-info');
-        
-        fetch('/estimate-compression', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                estimatedSize.textContent = 'Não foi possível estimar';
-                return;
-            }
-            
-            estimatedSize.innerHTML = '<i class="bi bi-arrow-down-circle text-success me-1"></i>' + data.compressed_size_formatted;
-            
-            // Guardar dados para uso posterior
-            window.lastEstimation = data;
-            window.originalFileSize = data.original_size;
-            
-            // Mostrar seção de tamanho personalizado para todos os tipos
-            const customSizeSection = document.getElementById('custom-size-section');
-            customSizeSection.style.display = 'block';
-            
-            // Sugerir um tamanho baseado na estimativa
-            const suggestedSize = Math.round(data.compressed_size / 1024);
-            document.getElementById('target-size').placeholder = 'Ex: ' + suggestedSize;
-            
-            if (data.savings && data.savings !== '0 B') {
-                savingsRow.style.display = 'flex';
-                savingsInfo.innerHTML = '-' + data.savings + ' (' + data.compression_ratio + '%)';
-            } else {
-                savingsRow.style.display = 'flex';
-                savingsInfo.innerHTML = '<span class="text-muted">Arquivo já otimizado</span>';
-            }
-        })
-        .catch(error => {
-            estimatedSize.textContent = 'Não foi possível estimar';
-            console.error('Erro ao estimar:', error);
-        });
-    }
-    
-    // Atualizar estimativa quando a qualidade mudar
-    document.getElementById('quality').addEventListener('change', function() {
-        const fileInput = document.getElementById('file');
-        if (fileInput.files && fileInput.files.length > 0) {
-            const estimatedSize = document.getElementById('estimated-size');
-            estimatedSize.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Recalculando...';
-            estimateCompression(fileInput.files[0]);
-        }
-    });
-    
-    // Funções para tamanho personalizado
-    function showCustomSizeSection() {
-        const section = document.getElementById('custom-size-section');
-        section.style.display = 'block';
-    }
-    
-    function hideCustomSizeSection() {
-        const section = document.getElementById('custom-size-section');
-        section.style.display = 'none';
-        document.getElementById('quality-result').className = 'quality-result';
-    }
-    
-    function calculateTargetQuality() {
-        const fileInput = document.getElementById('file');
-        const targetSize = document.getElementById('target-size').value;
-        const targetUnit = document.getElementById('target-unit').value;
-        const qualityResult = document.getElementById('quality-result');
-        
-        if (!fileInput.files || fileInput.files.length === 0) {
-            alert('Selecione um arquivo primeiro');
-            return;
-        }
-        
-        if (!targetSize || targetSize <= 0) {
-            alert('Informe um tamanho válido');
-            return;
-        }
-        
-        // Mostrar loading
-        qualityResult.className = 'quality-result ok';
-        qualityResult.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm"></span> Calculando qualidade necessária...</div>';
-        
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-        formData.append('target_size', targetSize);
-        formData.append('target_unit', targetUnit);
-        formData.append('compression_type', document.getElementById('compression_type').value);
-        
-        fetch('/calculate-target-quality', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                qualityResult.className = 'quality-result high';
-                qualityResult.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>' + data.error;
-                return;
-            }
-            
-            if (!data.supports_custom_size) {
-                qualityResult.className = 'quality-result medium';
-                qualityResult.innerHTML = '<i class="bi bi-info-circle me-2"></i>Ajuste de tamanho personalizado só está disponível para imagens.';
-                return;
-            }
-            
-            displayQualityResult(data);
-        })
-        .catch(error => {
-            qualityResult.className = 'quality-result high';
-            qualityResult.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Erro ao calcular: ' + error;
-        });
-    }
-    
-    function displayQualityResult(data) {
-        const qualityResult = document.getElementById('quality-result');
-        const qualitySlider = document.getElementById('quality');
-        const qualityValue = document.getElementById('quality-value');
-        
-        // Definir classe baseada no nível de aviso (sem 'show')
-        qualityResult.className = 'quality-result ' + data.warning_level;
-        
-        // Ícone baseado no nível
-        let icon = '';
-        let iconClass = '';
-        switch(data.warning_level) {
-            case 'ok':
-                icon = 'bi-check-circle-fill';
-                iconClass = 'quality-ok';
-                break;
-            case 'medium':
-                icon = 'bi-exclamation-circle-fill';
-                iconClass = 'quality-medium';
-                break;
-            case 'high':
-                icon = 'bi-exclamation-triangle-fill';
-                iconClass = 'quality-high';
-                break;
-            case 'critical':
-                icon = 'bi-x-circle-fill';
-                iconClass = 'quality-critical';
-                break;
-        }
-        
-        // Label dinâmico baseado no tipo
-        const qualityLabel = data.quality_label || 'Qualidade recomendada';
-        const compressionType = data.compression_type || 'image';
-        
-        let html = `
-            <div class="quality-indicator">
-                <i class="bi ${icon} ${iconClass}"></i>
-                <div>
-                    <strong>${qualityLabel}: ${data.recommended_quality}%</strong>
-                    <div class="small text-muted">${data.warning_message}</div>
-                </div>
+        <div id="file-info" class="file-info">
+            <div class="file-info-item">
+                <span>Arquivo:</span>
+                <span id="info-filename"></span>
             </div>
-            <div class="small mb-2">
-                <i class="bi bi-file-earmark me-1"></i>Tamanho estimado: <strong>${data.estimated_size_formatted}</strong>
-                ${!data.target_achievable ? '<span class="text-danger ms-2">(Não foi possível atingir o tamanho desejado)</span>' : ''}
+            <div class="file-info-item">
+                <span>Tamanho original:</span>
+                <span id="info-size"></span>
             </div>
-        `;
+            <div class="file-info-item">
+                <span>Tipo detectado:</span>
+                <span id="info-type"></span>
+            </div>
+            <div class="file-info-item estimation-row">
+                <span><i class="bi bi-graph-down me-1"></i>Tamanho estimado:</span>
+                <span id="info-estimated"></span>
+            </div>
+            <div class="file-info-item savings-row">
+                <span><strong>Economia estimada:</strong></span>
+                <span id="info-savings" class="text-success fw-bold"></span>
+            </div>
+        </div>
         
-        // Mostrar perda de qualidade apenas se aplicável
-        if (data.quality_loss_percent > 0) {
-            html += `
-                <div class="small mb-2">
-                    <i class="bi bi-graph-down me-1"></i>Perda de qualidade: <strong>${data.quality_loss_percent}%</strong>
-                </div>
-            `;
-        }
+        <div class="quality-slider mt-3" id="quality-section">
+            <label for="quality" class="form-label">
+                Qualidade: <span class="quality-value" id="quality-value">85</span>%
+            </label>
+            <input type="range" class="form-range" id="quality" name="quality" 
+                   min="1" max="100" value="85">
+            <div class="d-flex justify-content-between small text-muted">
+                <span>Menor tamanho</span>
+                <span>Maior qualidade</span>
+            </div>
+        </div>
         
-        // Alerta para qualidade crítica
-        if (data.warning_level === 'critical') {
-            let alertMessage = compressionType === 'pdf' 
-                ? 'As imagens do PDF ficarão muito degradadas.'
-                : 'Esta configuração resultará em uma imagem de baixa qualidade.';
-            html += `
-                <div class="alert alert-danger py-2 px-3 mb-2 small">
-                    <i class="bi bi-exclamation-diamond me-1"></i>
-                    <strong>Atenção:</strong> ${alertMessage}
-                </div>
-            `;
-        }
-        
-        // Botão para aplicar
-        let btnLabel = compressionType === 'zip' 
-            ? `Aplicar compressão máxima`
-            : `Aplicar qualidade de ${data.recommended_quality}%`;
-            
-        html += `
-            <button type="button" class="btn btn-sm ${data.warning_level === 'critical' ? 'btn-outline-danger' : 'btn-primary'}" 
-                    onclick="applyRecommendedQuality(${data.recommended_quality})">
-                <i class="bi bi-check2 me-1"></i>${btnLabel}
+        <div class="custom-size-section hidden" id="custom-size-section">
+            <div class="custom-size-header">
+                <h6><i class="bi bi-bullseye me-2"></i>Tamanho alvo</h6>
+                <span class="custom-size-toggle" id="toggle-custom-size">Desativar</span>
+            </div>
+            <div class="target-input-group">
+                <input type="number" class="form-control" id="target-size" 
+                       placeholder="Ex: 500" min="1" step="1">
+                <select class="form-select" id="target-unit">
+                    <option value="KB" selected>KB</option>
+                    <option value="MB">MB</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-outline-primary btn-sm w-100" id="btn-calculate">
+                <i class="bi bi-calculator me-1"></i>Calcular qualidade ideal
             </button>
-        `;
-        
-        qualityResult.innerHTML = html;
-    }
-    
-    function applyRecommendedQuality(quality) {
-        const qualitySlider = document.getElementById('quality');
-        const qualityValue = document.getElementById('quality-value');
-        const qualitySection = document.getElementById('quality-section');
-        
-        // Atualizar slider e valor
-        qualitySlider.value = quality;
-        qualityValue.textContent = quality + '%';
-        
-        // Mostrar seção de qualidade se estiver oculta
-        qualitySection.style.display = 'block';
-        
-        // Destacar brevemente o slider
-        qualitySlider.style.transition = 'box-shadow 0.3s';
-        qualitySlider.style.boxShadow = '0 0 10px rgba(29, 111, 66, 0.5)';
-        setTimeout(() => {
-            qualitySlider.style.boxShadow = 'none';
-        }, 1000);
-        
-        // Recalcular estimativa
-        const fileInput = document.getElementById('file');
-        if (fileInput.files && fileInput.files.length > 0) {
-            const estimatedSize = document.getElementById('estimated-size');
-            estimatedSize.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Recalculando...';
-            estimateCompression(fileInput.files[0]);
-        }
-        
-        // Limpar resultado de qualidade
-        document.getElementById('quality-result').className = 'quality-result';
-        document.getElementById('target-size').value = '';
-    }
-
-    // === Sistema de detecção de inatividade ===
-    const IDLE_TIMEOUT = 5 * 60 * 1000;
-    const POPUP_TIMEOUT = 5 * 60 * 1000;
-    let idleTimer = null, popupTimer = null, countdownInterval = null, isPopupVisible = false;
-    
-    function resetIdleTimer() {
-        if (isPopupVisible) return;
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(showIdlePopup, IDLE_TIMEOUT);
-    }
-    
-    function showIdlePopup() {
-        isPopupVisible = true;
-        document.getElementById('idleModal').classList.add('show');
-        startCountdown();
-    }
-    
-    function startCountdown() {
-        let timeLeft = POPUP_TIMEOUT / 1000;
-        updateCountdownDisplay(timeLeft);
-        countdownInterval = setInterval(function() {
-            timeLeft--;
-            updateCountdownDisplay(timeLeft);
-            if (timeLeft <= 0) closeSession();
-        }, 1000);
-        popupTimer = setTimeout(closeSession, POPUP_TIMEOUT);
-    }
-    
-    function updateCountdownDisplay(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        document.getElementById('countdownTimer').textContent = minutes + ':' + (secs < 10 ? '0' : '') + secs;
-    }
-    
-    function confirmActive() {
-        isPopupVisible = false;
-        document.getElementById('idleModal').classList.remove('show');
-        clearTimeout(popupTimer);
-        clearInterval(countdownInterval);
-        resetIdleTimer();
-    }
-    
-    function closeSession() {
-        clearTimeout(idleTimer); clearTimeout(popupTimer); clearInterval(countdownInterval); clearInterval(heartbeatInterval);
-        window.close();
-        setTimeout(function() {
-            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:sans-serif;color:#1F3144;"><h1>Sessão Encerrada</h1><p>Você pode fechar esta aba.</p></div>';
-        }, 500);
-    }
-    
-    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function(event) {
-        document.addEventListener(event, resetIdleTimer, { passive: true });
-    });
-    resetIdleTimer();
-    
-    const heartbeatInterval = setInterval(function() {
-        fetch('/heartbeat', { method: 'POST' });
-    }, 1000);
-</script>
-
-<!-- Modal de Inatividade -->
-<div class="idle-modal-overlay" id="idleModal">
-    <div class="idle-modal">
-        <div class="idle-modal-icon"><i class="bi bi-question-circle"></i></div>
-        <h3>Você ainda está aí?</h3>
-        <p>Detectamos que você está inativo há algum tempo.</p>
-        <div class="countdown">A sessão será encerrada em <span id="countdownTimer">5:00</span></div>
-        <div class="idle-modal-buttons">
-            <button class="btn btn-idle-yes" onclick="confirmActive()"><i class="bi bi-check-lg me-2"></i>Sim, estou aqui</button>
-            <button class="btn btn-idle-no" onclick="closeSession()"><i class="bi bi-x-lg me-2"></i>Não, encerrar</button>
+            <div class="quality-result" id="quality-result"></div>
         </div>
+        
+        <div class="d-grid mt-4">
+            <button type="submit" id="btn-submit" class="btn btn-primary-custom btn-lg" disabled>
+                <i class="bi bi-download me-2"></i>Comprimir e Baixar
+            </button>
+        </div>
+    </form>
+    
+    <div class="text-center mt-3">
+        <a href="#" class="small text-muted" id="show-custom-size">
+            <i class="bi bi-gear me-1"></i>Definir tamanho específico
+        </a>
     </div>
 </div>
-</body>
-</html>
+{% endblock %}
+
+{% block inline_js %}
+const fileInput = document.getElementById('file');
+const fileInfo = document.getElementById('file-info');
+const qualitySection = document.getElementById('quality-section');
+const qualitySlider = document.getElementById('quality');
+const qualityValue = document.getElementById('quality-value');
+const btnSubmit = document.getElementById('btn-submit');
+const form = document.getElementById('compressForm');
+const customSizeSection = document.getElementById('custom-size-section');
+const showCustomSizeLink = document.getElementById('show-custom-size');
+const toggleCustomSize = document.getElementById('toggle-custom-size');
+const targetSizeInput = document.getElementById('target-size');
+const targetUnitSelect = document.getElementById('target-unit');
+const btnCalculate = document.getElementById('btn-calculate');
+const qualityResult = document.getElementById('quality-result');
+
+let currentFile = null;
+let compressionType = 'auto';
+
+// Mostrar/esconder seção de tamanho customizado
+showCustomSizeLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    customSizeSection.classList.remove('hidden');
+    this.classList.add('hidden');
+});
+
+toggleCustomSize.addEventListener('click', function() {
+    customSizeSection.classList.add('hidden');
+    showCustomSizeLink.classList.remove('hidden');
+    qualityResult.classList.remove('show');
+});
+
+// Atualizar valor da qualidade
+qualitySlider.addEventListener('input', function() {
+    qualityValue.textContent = this.value;
+    if (currentFile) {
+        updateEstimation();
+    }
+});
+
+// Arquivo selecionado
+fileInput.addEventListener('change', async function() {
+    currentFile = this.files[0];
+    if (!currentFile) {
+        fileInfo.classList.remove('show');
+        qualitySection.style.display = 'none';
+        btnSubmit.disabled = true;
+        return;
+    }
+    
+    // Mostrar informações básicas
+    document.getElementById('info-filename').textContent = currentFile.name;
+    document.getElementById('info-size').textContent = Utils.formatSize(currentFile.size);
+    
+    // Determinar tipo de compressão
+    const ext = Utils.getExtension(currentFile.name);
+    if (['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif', '.tiff'].includes(ext)) {
+        compressionType = 'image';
+        document.getElementById('info-type').textContent = 'Imagem';
+        qualitySection.style.display = 'block';
+    } else if (ext === '.pdf') {
+        compressionType = 'pdf';
+        document.getElementById('info-type').textContent = 'PDF';
+        qualitySection.style.display = 'block';
+    } else {
+        compressionType = 'zip';
+        document.getElementById('info-type').textContent = 'Arquivo (ZIP)';
+        qualitySection.style.display = 'none';
+    }
+    
+    fileInfo.classList.add('show');
+    btnSubmit.disabled = false;
+    
+    await updateEstimation();
+});
+
+// Atualizar estimativa de compressão
+async function updateEstimation() {
+    try {
+        const result = await CompressApi.estimate(currentFile, {
+            compressionType: compressionType,
+            quality: parseInt(qualitySlider.value)
+        });
+        
+        document.getElementById('info-estimated').textContent = Utils.formatSize(result.estimated_size);
+        
+        const savings = ((currentFile.size - result.estimated_size) / currentFile.size * 100).toFixed(1);
+        document.getElementById('info-savings').textContent = `~${savings}%`;
+    } catch (error) {
+        console.error('Erro ao estimar:', error);
+    }
+}
+
+// Debouncear atualização de estimativa
+const debouncedEstimate = Utils.debounce(updateEstimation, 300);
+qualitySlider.addEventListener('input', debouncedEstimate);
+
+// Calcular qualidade para tamanho alvo
+btnCalculate.addEventListener('click', async function() {
+    const targetSize = parseFloat(targetSizeInput.value);
+    const targetUnit = targetUnitSelect.value;
+    
+    if (!targetSize || !currentFile) {
+        Utils.showToast('Informe um tamanho alvo válido', 'warning');
+        return;
+    }
+    
+    this.disabled = true;
+    this.innerHTML = '<span class="loading-spinner me-1"></span>Calculando...';
+    
+    try {
+        const result = await CompressApi.calculateTargetQuality(
+            currentFile, targetSize, targetUnit, compressionType
+        );
+        
+        let statusClass = 'ok';
+        let message = '';
+        
+        if (result.possible) {
+            qualitySlider.value = result.recommended_quality;
+            qualityValue.textContent = result.recommended_quality;
+            message = `<i class="bi bi-check-circle me-2"></i>
+                       Qualidade recomendada: <strong>${result.recommended_quality}%</strong><br>
+                       <small>Tamanho estimado: ${Utils.formatSize(result.estimated_size)}</small>`;
+            await updateEstimation();
+        } else {
+            statusClass = 'critical';
+            message = `<i class="bi bi-exclamation-triangle me-2"></i>
+                       Não é possível atingir o tamanho desejado.<br>
+                       <small>Tamanho mínimo possível: ${Utils.formatSize(result.minimum_size)}</small>`;
+        }
+        
+        qualityResult.className = `quality-result show ${statusClass}`;
+        qualityResult.innerHTML = message;
+    } catch (error) {
+        Utils.showToast(error.message, 'error');
+    } finally {
+        this.disabled = false;
+        this.innerHTML = '<i class="bi bi-calculator me-1"></i>Calcular qualidade ideal';
+    }
+});
+
+// Submit do formulário
+form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!currentFile) return;
+    
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<span class="loading-spinner me-2"></span>Comprimindo...';
+    
+    try {
+        const { blob, filename } = await CompressApi.compress(currentFile, {
+            compressionType: compressionType,
+            quality: parseInt(qualitySlider.value)
+        });
+        
+        Utils.downloadBlob(blob, filename);
+        Utils.showToast('Arquivo comprimido com sucesso!', 'success');
+    } catch (error) {
+        Utils.showToast(error.message, 'error');
+    } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="bi bi-download me-2"></i>Comprimir e Baixar';
+    }
+});
+{% endblock %}

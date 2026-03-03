@@ -1,9 +1,36 @@
+# -*- coding: utf-8 -*-
+"""
+VestasLovePDF - Main Application Entry Point
+
+This module serves as the main entry point for the application.
+It uses the application factory pattern and registers all blueprints.
+
+Architecture:
+    - app/__init__.py: Application factory (create_app)
+    - app/api/v1/: API endpoints (Blueprint pattern)
+    - app/processors/: File processors (Strategy pattern)
+    - app/core/: Core utilities (response, exceptions, middleware)
+    - app/pages/: Template rendering routes
+    - app/utils/: Legacy utility functions (still used by processors)
+
+API Endpoints:
+    - /api/v1/compress/*: Compression endpoints
+    - /api/v1/convert/*: Conversion endpoints
+    - /api/v1/pdf/*: PDF tools (merge, split)
+    - /api/v1/ocr/*: OCR endpoints
+
+Legacy Routes (for backward compatibility):
+    - /convert, /compress, etc. still work with the old frontend
+"""
 from flask import Flask, render_template, request, send_file, flash, redirect, url_for, jsonify
 import os
 import webbrowser
 from threading import Timer, Thread
 import time
 import base64
+import zipfile
+
+# Import utilities (for legacy routes compatibility)
 from app.utils.converters import convert_file, detect_excel_version
 from app.utils.compressor import compress_file, estimate_compression, calculate_quality_for_target_size
 from app.utils.pdf_merger import get_pdf_preview, get_pdf_page_count, merge_pdfs, get_all_pdf_previews, split_pdf
@@ -16,14 +43,37 @@ from app.utils.ocr_pdf import (
     ocr_pdf_to_docx,
     get_pdf_preview_for_ocr
 )
-import zipfile
 
+# Import API blueprints
+from app.api.v1 import api_v1
+from app.core.response import APIResponse
+from app.core.exceptions import AppException
+
+# Create Flask app
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey')
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
 
+# Enable CORS for API endpoints
+try:
+    from flask_cors import CORS
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
+except ImportError:
+    pass  # CORS not installed, skip
+
+# Register API v1 blueprint
+app.register_blueprint(api_v1, url_prefix='/api/v1')
+
+# Register global error handlers for API
+@app.errorhandler(AppException)
+def handle_app_exception(error):
+    return APIResponse.error(error.message, error.code, error.status)
+
+# Heartbeat monitoring for desktop mode
 last_heartbeat = time.time()
 
 def monitor_heartbeat():
+    """Monitor heartbeat from browser for desktop mode."""
     global last_heartbeat
     while True:
         time.sleep(1)
@@ -32,7 +82,13 @@ def monitor_heartbeat():
             os._exit(0)
 
 def open_browser():
+    """Open browser automatically for desktop mode."""
     webbrowser.open_new_tab("http://127.0.0.1:5000")
+
+
+# ==================== LEGACY PAGE ROUTES ====================
+# These routes serve the HTML templates (frontend pages)
+# They are kept for backward compatibility with the current frontend
 
 @app.route('/')
 def index():
@@ -61,6 +117,23 @@ def pdf_splitter():
 @app.route('/ocr-pdf')
 def ocr_pdf():
     return render_template('ocr_pdf.html')
+
+
+# ==================== LEGACY API ROUTES ====================
+# These routes are kept for backward compatibility with the current frontend.
+# New implementations should use the API v1 endpoints (/api/v1/*)
+#
+# Mapping of legacy routes to new API endpoints:
+#   /pdf-splitter/load  -> POST /api/v1/pdf/split/load
+#   /pdf-splitter/split -> POST /api/v1/pdf/split
+#   /pdf-merger/preview -> POST /api/v1/pdf/merge/preview
+#   /pdf-merger/merge   -> POST /api/v1/pdf/merge
+#   /convert            -> POST /api/v1/convert/
+#   /compress           -> POST /api/v1/compress/
+#   /estimate-compression -> POST /api/v1/compress/estimate
+#   /calculate-target-quality -> POST /api/v1/compress/target-quality
+#   /detect-excel       -> POST /api/v1/convert/excel/detect
+#   /ocr/*              -> /api/v1/ocr/*
 
 @app.route('/pdf-splitter/load', methods=['POST'])
 def pdf_splitter_load():

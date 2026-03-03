@@ -2,14 +2,57 @@
 
 Ferramenta local para manipulação de PDFs e conversão de arquivos, similar ao iLovePDF.
 
+## Arquitetura do Projeto
+
+```
+VestasLovePDF/
+├── app/
+│   ├── __init__.py          # Application Factory Pattern
+│   ├── config.py            # Configurações (Dev, Prod, Test)
+│   ├── main.py              # Entry point e rotas legadas
+│   ├── api/
+│   │   └── v1/              # API REST v1
+│   │       ├── compressor.py    # Endpoints de compressão
+│   │       ├── converter.py     # Endpoints de conversão
+│   │       ├── pdf_tools.py     # Endpoints PDF (merge, split)
+│   │       └── ocr.py           # Endpoints OCR
+│   ├── processors/          # Strategy Pattern
+│   │   ├── base.py          # ProcessorRegistry
+│   │   ├── compressor.py    # Processador de compressão
+│   │   ├── converter.py     # Processador de conversão
+│   │   ├── pdf_tools.py     # Processador PDF tools
+│   │   └── ocr.py           # Processador OCR
+│   ├── core/                # Utilitários centrais
+│   │   ├── response.py      # APIResponse padronizado
+│   │   ├── exceptions.py    # Exceções customizadas
+│   │   └── middleware.py    # Middlewares Flask
+│   ├── static/              # CSS, JavaScript
+│   └── templates/           # HTML templates (Jinja2)
+├── setup/                   # Scripts de instalação
+├── tesseract/               # Tesseract OCR (opcional)
+├── run.py                   # Entry point principal
+└── run_silent.pyw           # Entry point sem console
+```
+
 ## Funcionalidades
 
-- **Conversor de Arquivos** - Converte entre diversos formatos
+- **Conversor de Arquivos** - Converte entre diversos formatos (PDF, Word, Excel, imagens)
 - **Conversor Excel** - Converte entre formatos de planilha (xlsx, xls, csv, ods)
 - **Compressor de PDF** - Reduz o tamanho de arquivos PDF
 - **Mesclador de PDF** - Une múltiplos PDFs em um único arquivo
 - **Divisor de PDF** - Divide um PDF em múltiplos arquivos
 - **OCR PDF** - Extrai texto de PDFs escaneados usando Tesseract OCR
+
+## API Endpoints
+
+| Prefixo | Descrição |
+|---------|-----------|
+| `/api/v1/compress/*` | Compressão de PDFs |
+| `/api/v1/convert/*` | Conversão de arquivos |
+| `/api/v1/pdf/*` | Merge, split de PDFs |
+| `/api/v1/ocr/*` | OCR para PDFs |
+| `/api/v1/health` | Health check |
+| `/api/v1/processors` | Lista processadores |
 
 ## Opção 1: Instalação Rápida (Recomendado)
 
@@ -43,6 +86,12 @@ python setup/build_exe.py
 ```
 
 O executável será gerado em `dist/VestasLovePDF.exe`
+
+O script `build_exe.py`:
+- Instala dependências automaticamente
+- Inclui todos os módulos da nova arquitetura
+- Copia o Tesseract para a pasta dist (se disponível)
+- Cria atalho na área de trabalho
 
 ## Instalação do Tesseract OCR
 
@@ -97,10 +146,12 @@ brew install tesseract tesseract-lang
 
 | Arquivo | Descrição |
 |---------|-----------|
-| `install.bat` | Instalador principal (instala dependências + cria atalho) |
+| `install.bat` | Instalador principal (dependências + atalho + verificação) |
 | `uninstall.bat` | Remove o atalho da área de trabalho |
 | `create_shortcut.ps1` | Script PowerShell para criar o atalho |
 | `build_exe.py` | Script para criar executável standalone com PyInstaller |
+| `setup_tesseract.bat` | Configuração do Tesseract OCR |
+| `setup_tesseract.ps1` | Script PowerShell para Tesseract |
 
 ## Modo Silencioso
 
@@ -116,6 +167,24 @@ O atalho criado executa o programa usando `pythonw.exe` e o arquivo `run_silent.
 - Conexão com internet (para instalação inicial)
 - **Tesseract OCR** (opcional, para funcionalidade OCR)
 
+## Dependências Python
+
+```
+flask             # Framework web
+flask-cors        # CORS para API
+pandas            # Manipulação de dados
+openpyxl          # Excel xlsx
+xlrd/xlwt         # Excel xls
+odfpy             # OpenDocument
+pyxlsb            # Excel binário
+Pillow            # Processamento de imagens
+PyMuPDF           # Manipulação de PDFs
+python-docx       # Documentos Word
+pdf2docx          # PDF para Word
+pytesseract       # Interface Tesseract OCR
+pyinstaller       # Build de executável
+```
+
 ## Solução de Problemas
 
 ### O atalho não funciona
@@ -127,10 +196,14 @@ O atalho criado executa o programa usando `pythonw.exe` e o arquivo `run_silent.
 1. Verifique se a porta 5000 não está em uso
 2. Abra manualmente: http://127.0.0.1:5000
 
-### Erro de dependências
+### Erro de importação de módulos
 ```bash
+# Reinstalar todas as dependências
 pip install --upgrade pip
 pip install -r requirements.txt --force-reinstall
+
+# Testar a importação da aplicação
+python -c "from app import create_app; print('OK')"
 ```
 
 ### OCR não funciona
@@ -138,3 +211,27 @@ pip install -r requirements.txt --force-reinstall
 2. Verifique se a pasta `tesseract/tessdata/` contém os arquivos de idioma (`.traineddata`)
 3. Reinicie o VestasLovePDF após copiar os arquivos
 4. Veja as instruções no modal de instalação dentro da funcionalidade OCR
+
+### Erro ao criar executável
+```bash
+# Reconstruir do zero
+python setup/build_exe.py
+
+# Se falhar, tente manualmente:
+pip install pyinstaller
+pyinstaller --onefile --windowed run.py
+```
+
+## Desenvolvimento
+
+Para executar em modo de desenvolvimento:
+
+```bash
+# Modo normal (com console)
+python run.py
+
+# Modo silencioso
+pythonw run_silent.pyw
+```
+
+A API estará disponível em `http://127.0.0.1:5000/api/v1/`

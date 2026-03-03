@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Versões Excel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #1F3144;
+            --primary-hover: #152536;
+            --accent-color: #005AFF;
+            --accent-light: #96CBF0;
+            --bg-color: #E3E5EB;
+            --text-dark: #606D7B;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .back-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            color: var(--accent-color);
+        }
+        
+        .converter-card {
+            max-width: 550px;
+            width: 100%;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(31, 49, 68, 0.1);
+            background: white;
+            margin: 0 auto;
+        }
+        
+        .page-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #2a4a66 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+        }
+        
+        .page-icon i {
+            font-size: 28px;
+            color: white;
+        }
+        
+        .btn-convert {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        
+        .btn-convert:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .format-badge {
+            background-color: #dbe9f5;
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        
+        #excel-info {
+            display: none;
+        }
+        
+        .excel-options {
+            background-color: var(--bg-color);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .info-box {
+            background-color: #dbe9f5;
+            border-left: 4px solid var(--accent-color);
+            padding: 12px 15px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 20px;
+        }
+        
+        .info-box i {
+            color: var(--accent-color);
+        }
+        
+        /* Modal de inatividade */
+        .idle-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(31, 49, 68, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .idle-modal-overlay.show {
+            display: flex;
+        }
+        
+        .idle-modal {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalPop 0.3s ease;
+        }
+        
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        
+        .idle-modal-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .idle-modal-icon i { font-size: 36px; color: white; }
+        .idle-modal h3 { color: var(--primary-color); margin-bottom: 10px; font-weight: 600; }
+        .idle-modal p { color: var(--text-dark); margin-bottom: 25px; }
+        .idle-modal .countdown { font-size: 0.9rem; color: #A2A9B1; margin-bottom: 20px; }
+        .idle-modal .countdown span { font-weight: 600; color: #E17D28; }
+        .idle-modal-buttons { display: flex; gap: 15px; justify-content: center; }
+        .idle-modal-buttons .btn { padding: 12px 30px; border-radius: 8px; font-weight: 500; }
+        .btn-idle-yes { background-color: var(--primary-color); color: white; border: none; }
+        .btn-idle-yes:hover { background-color: var(--accent-color); color: white; }
+        .btn-idle-no { background-color: transparent; color: var(--text-dark); border: 2px solid #ddd; }
+        .btn-idle-no:hover { background-color: #f5f5f5; border-color: #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/" class="back-link">
+        <i class="bi bi-arrow-left"></i> Voltar ao início
+    </a>
+    
+    <div class="converter-card">
+        <div class="page-icon">
+            <i class="bi bi-file-earmark-excel"></i>
+        </div>
+        <h2 class="text-center mb-4">Conversor de Versões Excel</h2>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-danger">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        
+        <div class="info-box">
+            <i class="bi bi-info-circle me-2"></i>
+            <small>Preserva formatação condicional, estilos, células mescladas e todas as planilhas.</small>
+        </div>
+
+        <form action="/convert" method="post" enctype="multipart/form-data" id="excel-form">
+            <div class="mb-3">
+                <label for="excel-file" class="form-label">Selecione um arquivo Excel</label>
+                <input class="form-control" type="file" id="excel-file" name="file" 
+                       accept=".xlsx,.xls,.xlsb,.ods" onchange="detectExcelVersion(this)">
+                <div class="form-text">Formatos aceitos: .xlsx, .xls, .xlsb, .ods</div>
+            </div>
+
+            <div id="excel-info">
+                <div class="text-center mb-3">
+                    <span class="format-badge" id="detected-format"></span>
+                </div>
+                
+                <div class="excel-options">
+                    <label for="excel-conv-type" class="form-label">Converter para:</label>
+                    <select class="form-select" id="excel-conv-type" name="conv_type" required>
+                        <!-- Opções serão preenchidas dinamicamente -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="d-grid mt-4">
+                <button type="submit" id="btn-excel-submit" class="btn btn-convert btn-lg" disabled>
+                    <i class="bi bi-download me-2"></i>Converter e Baixar
+                </button>
+            </div>
+        </form>
+        
+        <p class="text-muted mt-4 text-center small">
+            O arquivo convertido será baixado automaticamente.
+        </p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    async function detectExcelVersion(input) {
+        const excelInfo = document.getElementById('excel-info');
+        const detectedFormat = document.getElementById('detected-format');
+        const excelConvType = document.getElementById('excel-conv-type');
+        const btnExcelSubmit = document.getElementById('btn-excel-submit');
+
+        if (!input.files || input.files.length === 0) {
+            excelInfo.style.display = 'none';
+            btnExcelSubmit.disabled = true;
+            return;
+        }
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/detect-excel', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Mostrar formato detectado
+                detectedFormat.textContent = `Formato detectado: ${data.format}`;
+                
+                // Preencher opções de conversão
+                excelConvType.innerHTML = '';
+                data.available_conversions.forEach(conv => {
+                    const option = document.createElement('option');
+                    option.value = conv.value;
+                    option.textContent = conv.label;
+                    excelConvType.appendChild(option);
+                });
+                
+                excelInfo.style.display = 'block';
+                btnExcelSubmit.disabled = false;
+            } else {
+                const error = await response.json();
+                alert(error.error || 'Erro ao detectar formato do arquivo');
+                excelInfo.style.display = 'none';
+                btnExcelSubmit.disabled = true;
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao processar o arquivo');
+            excelInfo.style.display = 'none';
+            btnExcelSubmit.disabled = true;
+        }
+    }
+
+    // === Sistema de detecção de inatividade ===
+    const IDLE_TIMEOUT = 5 * 60 * 1000;
+    const POPUP_TIMEOUT = 5 * 60 * 1000;
+    let idleTimer = null, popupTimer = null, countdownInterval = null, isPopupVisible = false;
+    
+    function resetIdleTimer() {
+        if (isPopupVisible) return;
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(showIdlePopup, IDLE_TIMEOUT);
+    }
+    
+    function showIdlePopup() {
+        isPopupVisible = true;
+        document.getElementById('idleModal').classList.add('show');
+        startCountdown();
+    }
+    
+    function startCountdown() {
+        let timeLeft = POPUP_TIMEOUT / 1000;
+        updateCountdownDisplay(timeLeft);
+        countdownInterval = setInterval(function() {
+            timeLeft--;
+            updateCountdownDisplay(timeLeft);
+            if (timeLeft <= 0) closeSession();
+        }, 1000);
+        popupTimer = setTimeout(closeSession, POPUP_TIMEOUT);
+    }
+    
+    function updateCountdownDisplay(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        document.getElementById('countdownTimer').textContent = minutes + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+    
+    function confirmActive() {
+        isPopupVisible = false;
+        document.getElementById('idleModal').classList.remove('show');
+        clearTimeout(popupTimer);
+        clearInterval(countdownInterval);
+        resetIdleTimer();
+    }
+    
+    function closeSession() {
+        clearTimeout(idleTimer); clearTimeout(popupTimer); clearInterval(countdownInterval); clearInterval(heartbeatInterval);
+        window.close();
+        setTimeout(function() {
+            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:sans-serif;color:#1F3144;"><h1>Sessão Encerrada</h1><p>Você pode fechar esta aba.</p></div>';
+        }, 500);
+    }
+    
+    ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function(event) {
+        document.addEventListener(event, resetIdleTimer, { passive: true });
+    });
+    resetIdleTimer();
+    
+    const heartbeatInterval = setInterval(function() {
+        fetch('/heartbeat', { method: 'POST' });
+    }, 1000);
+</script>
+
+<!-- Modal de Inatividade -->
+<div class="idle-modal-overlay" id="idleModal">
+    <div class="idle-modal">
+        <div class="idle-modal-icon"><i class="bi bi-question-circle"></i></div>
+        <h3>Você ainda está aí?</h3>
+        <p>Detectamos que você está inativo há algum tempo.</p>
+        <div class="countdown">A sessão será encerrada em <span id="countdownTimer">5:00</span></div>
+        <div class="idle-modal-buttons">
+            <button class="btn btn-idle-yes" onclick="confirmActive()"><i class="bi bi-check-lg me-2"></i>Sim, estou aqui</button>
+            <button class="btn btn-idle-no" onclick="closeSession()"><i class="bi bi-x-lg me-2"></i>Não, encerrar</button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

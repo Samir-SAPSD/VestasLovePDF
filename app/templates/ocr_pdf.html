@@ -1,803 +1,497 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OCR PDF - Reconhecimento de Texto</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #1F3144;
-            --primary-hover: #152536;
-            --accent-color: #005AFF;
-            --accent-light: #96CBF0;
-            --bg-color: #E3E5EB;
-            --text-dark: #606D7B;
-        }
-        
-        body {
-            background-color: var(--bg-color);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .back-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 20px;
-        }
-        
-        .back-link:hover {
-            color: var(--accent-color);
-        }
-        
-        .converter-card {
-            max-width: 800px;
-            width: 100%;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(31, 49, 68, 0.1);
-            background: white;
-            margin: 0 auto;
-        }
-        
-        .page-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary-color) 0%, #2a4a66 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-        }
-        
-        .page-icon i {
-            font-size: 28px;
-            color: white;
-        }
-        
-        .btn-ocr {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-        }
-        
-        .btn-ocr:hover {
-            background-color: var(--accent-color);
-            color: white;
-        }
-        
-        .info-box {
-            background-color: #dbe9f5;
-            border-left: 4px solid var(--accent-color);
-            padding: 12px 15px;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 20px;
-        }
-        
-        .info-box i {
-            color: var(--accent-color);
-        }
-        
-        .warning-box {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 12px 15px;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 20px;
-        }
-        
-        .warning-box i {
-            color: #ffc107;
-        }
-        
-        .error-box {
-            background-color: #f8d7da;
-            border-left: 4px solid #dc3545;
-            padding: 12px 15px;
-            border-radius: 0 8px 8px 0;
-            margin-bottom: 20px;
-        }
-        
-        .error-box i {
-            color: #dc3545;
-        }
-        
-        .format-list {
-            font-size: 0.9rem;
-            color: var(--text-dark);
-        }
-        
-        .format-list strong {
-            color: var(--primary-color);
-        }
-        
-        #file-info {
-            display: none;
-            background-color: var(--bg-color);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-        
-        .file-info-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .file-info-item:last-child {
-            border-bottom: none;
-        }
-        
-        .preview-container {
-            display: none;
-            margin-top: 20px;
-        }
-        
-        .preview-image {
-            max-width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .output-options {
-            display: none;
-            margin-top: 20px;
-        }
-        
-        .output-option {
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        
-        .output-option:hover {
-            border-color: var(--accent-light);
-        }
-        
-        .output-option.selected {
-            border-color: var(--accent-color);
-            background-color: #f0f7ff;
-        }
-        
-        .output-option i {
-            font-size: 2rem;
-            color: var(--primary-color);
-            margin-bottom: 10px;
-        }
-        
-        .output-option h6 {
-            margin-bottom: 5px;
-            color: var(--primary-color);
-        }
-        
-        .output-option small {
-            color: var(--text-dark);
-        }
-        
-        .progress-container {
-            display: none;
-            margin-top: 20px;
-        }
-        
-        .progress {
-            height: 25px;
-            border-radius: 10px;
-        }
-        
-        .progress-bar {
-            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
-            transition: width 0.3s ease;
-        }
-        
-        .result-container {
-            display: none;
-            margin-top: 20px;
-        }
-        
-        .text-result {
-            max-height: 400px;
-            overflow-y: auto;
-            background-color: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 10px;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-            white-space: pre-wrap;
-        }
-        
-        .language-select {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 15px;
-        }
-        
-        .language-option {
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 8px 15px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .language-option:hover {
-            border-color: var(--accent-light);
-        }
-        
-        .language-option.selected {
-            border-color: var(--accent-color);
-            background-color: #f0f7ff;
-        }
-        
-        .dpi-slider {
-            margin-top: 15px;
-        }
-        
-        .dpi-value {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        
-        #tesseract-status {
-            display: none;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
-<div class="container">
-    <a href="/" class="back-link">
-        <i class="bi bi-arrow-left"></i> Voltar ao início
-    </a>
+{% block title %}OCR PDF{% endblock %}
+
+{% block inline_css %}
+.tesseract-status {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.tesseract-status.ok {
+    background-color: #d4edda;
+    border: 1px solid #28a745;
+}
+
+.tesseract-status.error {
+    background-color: #f8d7da;
+    border: 1px solid #dc3545;
+}
+
+.tesseract-status.checking {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+}
+
+.language-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--spacing-sm);
+    max-height: 200px;
+    overflow-y: auto;
+    padding: var(--spacing-sm);
+    background-color: #f8f9fa;
+    border-radius: var(--radius-sm);
+}
+
+.language-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.language-option:hover {
+    border-color: var(--primary-color);
+}
+
+.language-option.selected {
+    border-color: var(--primary-color);
+    background-color: var(--bg-info);
+}
+
+.language-option input {
+    display: none;
+}
+
+.language-option .check-icon {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ccc;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+
+.language-option.selected .check-icon {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.dpi-slider-container {
+    background-color: #f8f9fa;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+}
+
+.dpi-value {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+.dpi-presets {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.dpi-preset {
+    flex: 1;
+    padding: 5px 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: var(--radius-sm);
+    background: white;
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.dpi-preset:hover {
+    border-color: var(--primary-color);
+}
+
+.dpi-preset.active {
+    border-color: var(--primary-color);
+    background-color: var(--bg-info);
+}
+
+.output-format-options {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.format-option {
+    flex: 1;
+    padding: var(--spacing-md);
+    border: 2px solid #e0e0e0;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.format-option:hover {
+    border-color: var(--primary-color);
+}
+
+.format-option.selected {
+    border-color: var(--primary-color);
+    background-color: var(--bg-info);
+}
+
+.format-option i {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    color: var(--primary-color);
+}
+
+.format-option h6 {
+    margin-bottom: 5px;
+}
+
+.format-option p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.processing-info {
+    background-color: var(--bg-info);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+}
+
+.processing-info .progress {
+    height: 8px;
+    margin-top: var(--spacing-sm);
+}
+
+.install-help {
+    background-color: #f8f9fa;
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    margin-top: var(--spacing-md);
+}
+
+.install-help h6 {
+    color: var(--text-dark);
+}
+
+.install-help code {
+    background-color: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="main-card">
+    <div class="page-icon">
+        <i class="bi bi-eye"></i>
+    </div>
+    <h2 class="text-center mb-4">OCR - Reconhecimento de Texto</h2>
     
-    <div class="converter-card">
-        <div class="text-center mb-4">
-            <div class="page-icon">
-                <i class="bi bi-eye"></i>
-            </div>
-            <h2 class="mb-2">OCR PDF</h2>
-            <p class="text-muted">Reconhecimento Óptico de Caracteres</p>
+    <div class="tesseract-status checking" id="tesseract-status">
+        <i class="bi bi-hourglass-split me-2"></i>
+        <span id="status-text">Verificando Tesseract OCR...</span>
+    </div>
+
+    <div class="info-box">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        Extraia texto de PDFs escaneados ou imagens. O OCR detecta e converte 
+        imagens de texto em texto pesquisável e editável.
+    </div>
+
+    <form id="ocrForm">
+        <div class="mb-3">
+            <label for="file" class="form-label">Selecione o arquivo</label>
+            <input class="form-control" type="file" id="file" name="file" 
+                   accept=".pdf,.png,.jpg,.jpeg,.tiff,.bmp" required>
+            <div class="form-text">Formatos: PDF, PNG, JPG, TIFF, BMP</div>
         </div>
         
-        <!-- Status do Tesseract -->
-        <div id="tesseract-status">
-            <div class="error-box" id="tesseract-error" style="display: none;">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                <strong>Tesseract não encontrado!</strong>
-                <p class="mb-0 mt-1 small">
-                    Copie os arquivos do Tesseract para a pasta do projeto.
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#installModal">Ver instruções</a>
-                </p>
-                <p class="mb-0 mt-1 small text-muted" id="tesseract-local-path"></p>
+        <div class="mb-4">
+            <label class="form-label">Idiomas do documento</label>
+            <div class="language-grid" id="language-grid">
+                <!-- Idiomas serão carregados dinamicamente -->
             </div>
-            <div class="info-box" id="tesseract-ok" style="display: none;">
-                <i class="bi bi-check-circle-fill me-2"></i>
-                <strong>Tesseract instalado</strong>
-                <span id="tesseract-version" class="ms-2 badge bg-success"></span>
-                <span id="tesseract-local-badge" class="ms-1 badge bg-info" style="display: none;">Local</span>
+            <div class="form-text mt-2">
+                <i class="bi bi-lightbulb me-1"></i>
+                Selecione múltiplos idiomas se o documento for multilíngue
             </div>
         </div>
         
-        <div class="info-box">
-            <i class="bi bi-info-circle-fill me-2"></i>
-            <strong>O que é OCR?</strong>
-            <p class="mb-0 mt-1 small">
-                OCR (Reconhecimento Óptico de Caracteres) extrai texto de PDFs escaneados ou imagens.
-                Ideal para documentos digitalizados que não possuem texto selecionável.
-            </p>
+        <div class="dpi-slider-container mb-4">
+            <label class="form-label">
+                <i class="bi bi-image me-2"></i>
+                Resolução (DPI): <span class="dpi-value" id="dpi-value">300</span>
+            </label>
+            <input type="range" class="form-range" id="dpi" name="dpi" 
+                   min="72" max="600" value="300" step="1">
+            <div class="dpi-presets">
+                <button type="button" class="dpi-preset" data-dpi="150">150 (Rápido)</button>
+                <button type="button" class="dpi-preset active" data-dpi="300">300 (Padrão)</button>
+                <button type="button" class="dpi-preset" data-dpi="450">450 (Alta)</button>
+                <button type="button" class="dpi-preset" data-dpi="600">600 (Máxima)</button>
+            </div>
+            <div class="form-text mt-2">
+                Maior DPI = melhor qualidade, mas mais lento. 300 DPI é recomendado para maioria dos casos.
+            </div>
         </div>
         
-        <form id="ocr-form" enctype="multipart/form-data">
-            <div class="mb-3">
-                <label for="file" class="form-label fw-semibold">
-                    <i class="bi bi-file-earmark-pdf me-1"></i> Selecione o PDF
-                </label>
-                <input class="form-control" type="file" id="file" name="file" accept=".pdf" required>
-                <div class="form-text">Formatos aceitos: PDF (escaneado ou com imagens)</div>
-            </div>
-            
-            <div id="file-info">
-                <div class="file-info-item">
-                    <span><i class="bi bi-file-text me-2"></i>Arquivo:</span>
-                    <span id="file-name" class="fw-semibold"></span>
+        <div class="mb-4">
+            <label class="form-label">Formato de saída</label>
+            <div class="output-format-options">
+                <div class="format-option selected" data-format="pdf">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                    <h6>PDF Pesquisável</h6>
+                    <p>Texto invisível sobre imagem</p>
                 </div>
-                <div class="file-info-item">
-                    <span><i class="bi bi-hdd me-2"></i>Tamanho:</span>
-                    <span id="file-size"></span>
+                <div class="format-option" data-format="txt">
+                    <i class="bi bi-file-earmark-text"></i>
+                    <h6>Texto Plano</h6>
+                    <p>Apenas o texto extraído</p>
                 </div>
-                <div class="file-info-item">
-                    <span><i class="bi bi-files me-2"></i>Páginas:</span>
-                    <span id="file-pages"></span>
+                <div class="format-option" data-format="docx">
+                    <i class="bi bi-file-earmark-word"></i>
+                    <h6>Word</h6>
+                    <p>Documento editável</p>
                 </div>
             </div>
-            
-            <div class="preview-container" id="preview-container">
-                <h6 class="mb-3"><i class="bi bi-image me-1"></i> Preview da primeira página</h6>
-                <img id="preview-image" class="preview-image" alt="Preview do PDF">
+        </div>
+        
+        <div class="processing-info hidden" id="processing-info">
+            <div class="d-flex justify-content-between align-items-center">
+                <span id="processing-text">Processando...</span>
+                <span id="processing-percent">0%</span>
             </div>
-            
-            <div class="output-options" id="output-options">
-                <h6 class="mb-3"><i class="bi bi-sliders me-1"></i> Configurações do OCR</h6>
-                
-                <label class="form-label fw-semibold">Idioma do documento:</label>
-                <div class="language-select" id="language-select">
-                    <div class="language-option selected" data-lang="por">
-                        <i class="bi bi-translate me-1"></i> Português
-                    </div>
-                    <div class="language-option" data-lang="eng">
-                        <i class="bi bi-translate me-1"></i> Inglês
-                    </div>
-                    <div class="language-option" data-lang="por+eng">
-                        <i class="bi bi-translate me-1"></i> Português + Inglês
-                    </div>
-                    <div class="language-option" data-lang="spa">
-                        <i class="bi bi-translate me-1"></i> Espanhol
-                    </div>
-                </div>
-                <input type="hidden" name="language" id="language" value="por">
-                
-                <div class="dpi-slider">
-                    <label class="form-label fw-semibold">
-                        Qualidade do OCR: <span class="dpi-value" id="dpi-value">300</span> DPI
-                    </label>
-                    <input type="range" class="form-range" id="dpi" name="dpi" min="150" max="600" step="50" value="300">
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>Rápido (150)</span>
-                        <span>Balanceado (300)</span>
-                        <span>Alta qualidade (600)</span>
-                    </div>
-                </div>
-                
-                <hr class="my-4">
-                
-                <label class="form-label fw-semibold">Formato de saída:</label>
-                <div class="row g-3">
-                    <div class="col-6 col-md-3">
-                        <div class="output-option selected" data-output="txt">
-                            <i class="bi bi-file-text"></i>
-                            <h6>TXT</h6>
-                            <small>Texto simples</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="output-option" data-output="docx">
-                            <i class="bi bi-file-word"></i>
-                            <h6>Word</h6>
-                            <small>Documento editável</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="output-option" data-output="pdf">
-                            <i class="bi bi-file-pdf"></i>
-                            <h6>PDF Pesquisável</h6>
-                            <small>Com texto oculto</small>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="output-option" data-output="preview">
-                            <i class="bi bi-eye"></i>
-                            <h6>Visualizar</h6>
-                            <small>Ver texto extraído</small>
-                        </div>
-                    </div>
-                </div>
-                <input type="hidden" name="output_format" id="output_format" value="txt">
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     id="progress-bar" style="width: 0%"></div>
             </div>
-            
-            <div class="progress-container" id="progress-container">
-                <h6 class="mb-2"><i class="bi bi-hourglass-split me-1"></i> Processando OCR...</h6>
-                <div class="progress">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" id="progress-bar" role="progressbar" style="width: 0%">
-                        <span id="progress-text">0%</span>
-                    </div>
-                </div>
-                <p class="text-muted small mt-2" id="progress-info">Preparando...</p>
-            </div>
-            
-            <div class="result-container" id="result-container">
-                <h6 class="mb-3"><i class="bi bi-check-circle me-1"></i> Texto Extraído</h6>
-                <div class="text-result" id="text-result"></div>
-                <div class="mt-3 d-flex gap-2">
-                    <button type="button" class="btn btn-outline-primary" id="copy-text">
-                        <i class="bi bi-clipboard me-1"></i> Copiar texto
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary" id="download-txt">
-                        <i class="bi bi-download me-1"></i> Baixar TXT
-                    </button>
-                </div>
-            </div>
-            
-            <div class="d-grid gap-2 mt-4" id="submit-container">
-                <button type="submit" class="btn btn-ocr btn-lg" id="submit-btn" disabled>
-                    <i class="bi bi-eye me-2"></i>Executar OCR
-                </button>
-            </div>
-        </form>
+        </div>
+        
+        <div class="d-grid mt-4">
+            <button type="submit" id="btn-submit" class="btn btn-primary-custom btn-lg" disabled>
+                <i class="bi bi-cpu me-2"></i>Processar OCR
+            </button>
+        </div>
+    </form>
+    
+    <div class="install-help hidden" id="install-help">
+        <h6><i class="bi bi-tools me-2"></i>Instalação do Tesseract</h6>
+        <p class="mb-2">O Tesseract OCR precisa ser instalado para usar esta funcionalidade:</p>
+        <ol class="small">
+            <li>Execute o script <code>setup/setup_tesseract.bat</code> como administrador</li>
+            <li>Ou instale manualmente do site oficial</li>
+            <li>Reinicie a aplicação após a instalação</li>
+        </ol>
+        <button type="button" class="btn btn-outline-primary btn-sm" id="btn-retry-check">
+            <i class="bi bi-arrow-clockwise me-1"></i>Verificar novamente
+        </button>
     </div>
 </div>
+{% endblock %}
 
-<!-- Modal de Instalação -->
-<div class="modal fade" id="installModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-download me-2"></i>Configurar Tesseract OCR</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-primary">
-                    <i class="bi bi-lightbulb me-2"></i>
-                    <strong>Método Recomendado:</strong> Copie os arquivos do Tesseract diretamente para a pasta do projeto.
-                </div>
-                
-                <h6><i class="bi bi-1-circle me-2"></i>Baixar o Tesseract</h6>
-                <ol>
-                    <li>Acesse: <a href="https://github.com/UB-Mannheim/tesseract/wiki" target="_blank">https://github.com/UB-Mannheim/tesseract/wiki</a></li>
-                    <li>Baixe o instalador mais recente (ex: <code>tesseract-ocr-w64-setup-5.x.x.exe</code>)</li>
-                    <li>Execute o instalador</li>
-                    <li><strong>Importante:</strong> Marque os idiomas:
-                        <ul>
-                            <li>☑ Portuguese</li>
-                            <li>☑ English</li>
-                        </ul>
-                    </li>
-                </ol>
-                
-                <h6 class="mt-4"><i class="bi bi-2-circle me-2"></i>Copiar para o projeto</h6>
-                <ol>
-                    <li>Após instalar, abra o Explorador de Arquivos</li>
-                    <li>Navegue até: <code>C:\Program Files\Tesseract-OCR</code></li>
-                    <li>Copie <strong>todo o conteúdo</strong> da pasta (Ctrl+A, Ctrl+C)</li>
-                    <li>Cole na pasta <code>tesseract</code> do projeto (Ctrl+V)</li>
-                </ol>
-                
-                <div class="bg-light p-3 rounded mt-3">
-                    <h6 class="mb-2"><i class="bi bi-folder me-2"></i>Estrutura esperada:</h6>
-                    <pre class="mb-0"><code>VestasLovePDF/
-└── tesseract/
-    ├── tesseract.exe
-    ├── tessdata/
-    │   ├── eng.traineddata
-    │   ├── por.traineddata
-    │   └── ...
-    └── *.dll (arquivos de biblioteca)</code></pre>
-                </div>
-                
-                <h6 class="mt-4"><i class="bi bi-3-circle me-2"></i>Verificar</h6>
-                <p>Após copiar os arquivos, feche e reabra esta página. O sistema detectará o Tesseract automaticamente.</p>
-                
-                <hr>
-                
-                <details>
-                    <summary class="text-muted cursor-pointer"><small>Alternativa: Linux/macOS</small></summary>
-                    <div class="mt-2">
-                        <h6>Linux (Ubuntu/Debian)</h6>
-                        <pre class="bg-light p-2 rounded"><code>sudo apt-get install tesseract-ocr tesseract-ocr-por tesseract-ocr-eng</code></pre>
-                        
-                        <h6>macOS</h6>
-                        <pre class="bg-light p-2 rounded"><code>brew install tesseract tesseract-lang</code></pre>
-                    </div>
-                </details>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" onclick="location.reload()">
-                    <i class="bi bi-arrow-clockwise me-1"></i>Verificar Novamente
-                </button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-            </div>
-        </div>
-    </div>
-</div>
+{% block inline_js %}
+const form = document.getElementById('ocrForm');
+const fileInput = document.getElementById('file');
+const btnSubmit = document.getElementById('btn-submit');
+const tesseractStatus = document.getElementById('tesseract-status');
+const statusText = document.getElementById('status-text');
+const languageGrid = document.getElementById('language-grid');
+const dpiSlider = document.getElementById('dpi');
+const dpiValue = document.getElementById('dpi-value');
+const installHelp = document.getElementById('install-help');
+const processingInfo = document.getElementById('processing-info');
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    let selectedLanguage = 'por';
-    let selectedOutput = 'txt';
-    let fileContent = null;
-    let extractedText = '';
+let selectedLanguages = ['por']; // Português como padrão
+let selectedFormat = 'pdf';
+let tesseractOk = false;
+
+// Verificar Tesseract
+async function checkTesseract() {
+    tesseractStatus.className = 'tesseract-status checking';
+    statusText.innerHTML = '<span class="loading-spinner me-2"></span>Verificando Tesseract OCR...';
     
-    // Heartbeat
-    setInterval(() => {
-        fetch('/heartbeat', { method: 'POST' });
-    }, 2000);
-    
-    // Verificar status do Tesseract
-    async function checkTesseract() {
-        try {
-            const response = await fetch('/ocr/check');
-            const data = await response.json();
-            
-            document.getElementById('tesseract-status').style.display = 'block';
-            
-            if (data.installed) {
-                document.getElementById('tesseract-ok').style.display = 'block';
-                document.getElementById('tesseract-error').style.display = 'none';
-                document.getElementById('tesseract-version').textContent = 'v' + data.version;
-                
-                // Mostrar badge "Local" se estiver usando pasta do projeto
-                if (data.using_local) {
-                    document.getElementById('tesseract-local-badge').style.display = 'inline';
-                }
-            } else {
-                document.getElementById('tesseract-ok').style.display = 'none';
-                document.getElementById('tesseract-error').style.display = 'block';
-                
-                // Mostrar caminho da pasta local
-                if (data.local_folder) {
-                    document.getElementById('tesseract-local-path').textContent = 
-                        'Pasta esperada: ' + data.local_folder;
-                }
-            }
-        } catch (e) {
-            console.error('Erro ao verificar Tesseract:', e);
-        }
-    }
-    
-    checkTesseract();
-    
-    // Seleção de idioma
-    document.querySelectorAll('.language-option').forEach(option => {
-        option.addEventListener('click', function() {
-            document.querySelectorAll('.language-option').forEach(o => o.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedLanguage = this.dataset.lang;
-            document.getElementById('language').value = selectedLanguage;
-        });
-    });
-    
-    // Seleção de formato de saída
-    document.querySelectorAll('.output-option').forEach(option => {
-        option.addEventListener('click', function() {
-            document.querySelectorAll('.output-option').forEach(o => o.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedOutput = this.dataset.output;
-            document.getElementById('output_format').value = selectedOutput;
-        });
-    });
-    
-    // Slider DPI
-    document.getElementById('dpi').addEventListener('input', function() {
-        document.getElementById('dpi-value').textContent = this.value;
-    });
-    
-    // Upload de arquivo
-    document.getElementById('file').addEventListener('change', async function() {
-        const file = this.files[0];
-        if (!file) return;
+    try {
+        const result = await OcrApi.checkTesseract();
+        tesseractOk = result.installed;
         
-        // Mostrar info do arquivo
-        document.getElementById('file-info').style.display = 'block';
-        document.getElementById('file-name').textContent = file.name;
-        document.getElementById('file-size').textContent = formatBytes(file.size);
-        
-        // Carregar preview
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        try {
-            const response = await fetch('/ocr/preview', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const data = await response.json();
-            
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-            
-            document.getElementById('file-pages').textContent = data.pages;
-            document.getElementById('preview-image').src = 'data:image/png;base64,' + data.preview;
-            document.getElementById('preview-container').style.display = 'block';
-            document.getElementById('output-options').style.display = 'block';
-            document.getElementById('submit-btn').disabled = false;
-            
-            // Guardar conteúdo do arquivo
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                fileContent = e.target.result.split(',')[1]; // Base64
-            };
-            reader.readAsDataURL(file);
-            
-        } catch (e) {
-            alert('Erro ao carregar preview: ' + e.message);
-        }
-    });
-    
-    // Formulário de OCR
-    document.getElementById('ocr-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const file = document.getElementById('file').files[0];
-        if (!file) return;
-        
-        // Se for preview, usar endpoint diferente
-        if (selectedOutput === 'preview') {
-            await runOcrPreview(file);
+        if (tesseractOk) {
+            tesseractStatus.className = 'tesseract-status ok';
+            statusText.innerHTML = `<i class="bi bi-check-circle me-2"></i>
+                                    Tesseract ${result.version || ''} instalado e pronto`;
+            installHelp.classList.add('hidden');
+            loadLanguages();
         } else {
-            await runOcrDownload(file);
+            tesseractStatus.className = 'tesseract-status error';
+            statusText.innerHTML = '<i class="bi bi-x-circle me-2"></i>Tesseract OCR não encontrado';
+            installHelp.classList.remove('hidden');
         }
-    });
-    
-    async function runOcrPreview(file) {
-        const progressContainer = document.getElementById('progress-container');
-        const resultContainer = document.getElementById('result-container');
-        const submitContainer = document.getElementById('submit-container');
-        
-        submitContainer.style.display = 'none';
-        progressContainer.style.display = 'block';
-        resultContainer.style.display = 'none';
-        
-        // Simular progresso
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += Math.random() * 15;
-            if (progress > 90) progress = 90;
-            updateProgress(progress, 'Processando OCR...');
-        }, 500);
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('language', selectedLanguage);
-        formData.append('dpi', document.getElementById('dpi').value);
-        
-        try {
-            const response = await fetch('/ocr/extract', {
-                method: 'POST',
-                body: formData
-            });
-            
-            clearInterval(progressInterval);
-            
-            const data = await response.json();
-            
-            if (data.error) {
-                alert(data.error);
-                progressContainer.style.display = 'none';
-                submitContainer.style.display = 'block';
-                return;
-            }
-            
-            updateProgress(100, 'Concluído!');
-            
-            setTimeout(() => {
-                progressContainer.style.display = 'none';
-                resultContainer.style.display = 'block';
-                document.getElementById('text-result').textContent = data.full_text;
-                extractedText = data.full_text;
-                submitContainer.style.display = 'block';
-            }, 500);
-            
-        } catch (e) {
-            clearInterval(progressInterval);
-            alert('Erro ao executar OCR: ' + e.message);
-            progressContainer.style.display = 'none';
-            submitContainer.style.display = 'block';
-        }
+    } catch (error) {
+        tesseractStatus.className = 'tesseract-status error';
+        statusText.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Erro ao verificar Tesseract';
+        installHelp.classList.remove('hidden');
     }
     
-    async function runOcrDownload(file) {
-        const progressContainer = document.getElementById('progress-container');
-        const submitContainer = document.getElementById('submit-container');
-        
-        submitContainer.style.display = 'none';
-        progressContainer.style.display = 'block';
-        
-        // Simular progresso
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            progress += Math.random() * 10;
-            if (progress > 90) progress = 90;
-            updateProgress(progress, 'Processando OCR...');
-        }, 500);
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('language', selectedLanguage);
-        formData.append('dpi', document.getElementById('dpi').value);
-        formData.append('output_format', selectedOutput);
-        
-        try {
-            const response = await fetch('/ocr/convert', {
-                method: 'POST',
-                body: formData
-            });
-            
-            clearInterval(progressInterval);
-            
-            if (!response.ok) {
-                const data = await response.json();
-                alert(data.error || 'Erro ao processar OCR');
-                progressContainer.style.display = 'none';
-                submitContainer.style.display = 'block';
-                return;
-            }
-            
-            updateProgress(100, 'Concluído!');
-            
-            // Download do arquivo
-            const blob = await response.blob();
-            const contentDisposition = response.headers.get('Content-Disposition');
-            let filename = 'output';
-            if (contentDisposition) {
-                const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                if (match) filename = match[1].replace(/['"]/g, '');
-            }
-            
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            
-            setTimeout(() => {
-                progressContainer.style.display = 'none';
-                submitContainer.style.display = 'block';
-            }, 500);
-            
-        } catch (e) {
-            clearInterval(progressInterval);
-            alert('Erro ao executar OCR: ' + e.message);
-            progressContainer.style.display = 'none';
-            submitContainer.style.display = 'block';
-        }
-    }
-    
-    function updateProgress(percent, text) {
-        document.getElementById('progress-bar').style.width = percent + '%';
-        document.getElementById('progress-text').textContent = Math.round(percent) + '%';
-        document.getElementById('progress-info').textContent = text;
-    }
-    
-    // Copiar texto
-    document.getElementById('copy-text').addEventListener('click', function() {
-        navigator.clipboard.writeText(extractedText).then(() => {
-            this.innerHTML = '<i class="bi bi-check me-1"></i> Copiado!';
-            setTimeout(() => {
-                this.innerHTML = '<i class="bi bi-clipboard me-1"></i> Copiar texto';
-            }, 2000);
-        });
-    });
-    
-    // Download TXT
-    document.getElementById('download-txt').addEventListener('click', function() {
-        const blob = new Blob([extractedText], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = document.getElementById('file-name').textContent.replace('.pdf', '_texto.txt');
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-    });
-    
-    function formatBytes(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-</script>
+    updateSubmitState();
+}
 
-</body>
-</html>
+// Carregar idiomas disponíveis
+async function loadLanguages() {
+    try {
+        const languages = await OcrApi.getLanguages();
+        renderLanguages(languages);
+    } catch (error) {
+        // Usar lista padrão
+        const defaultLanguages = [
+            { code: 'por', name: 'Português' },
+            { code: 'eng', name: 'Inglês' },
+            { code: 'spa', name: 'Espanhol' },
+            { code: 'fra', name: 'Francês' },
+            { code: 'deu', name: 'Alemão' },
+            { code: 'ita', name: 'Italiano' }
+        ];
+        renderLanguages(defaultLanguages);
+    }
+}
+
+// Renderizar grid de idiomas
+function renderLanguages(languages) {
+    languageGrid.innerHTML = '';
+    
+    languages.forEach(lang => {
+        const option = document.createElement('div');
+        option.className = 'language-option' + (selectedLanguages.includes(lang.code) ? ' selected' : '');
+        option.dataset.code = lang.code;
+        
+        option.innerHTML = `
+            <span class="check-icon">${selectedLanguages.includes(lang.code) ? '✓' : ''}</span>
+            <span>${lang.name}</span>
+        `;
+        
+        option.addEventListener('click', () => toggleLanguage(lang.code, option));
+        languageGrid.appendChild(option);
+    });
+}
+
+// Toggle seleção de idioma
+function toggleLanguage(code, element) {
+    const index = selectedLanguages.indexOf(code);
+    
+    if (index === -1) {
+        selectedLanguages.push(code);
+        element.classList.add('selected');
+        element.querySelector('.check-icon').textContent = '✓';
+    } else if (selectedLanguages.length > 1) {
+        // Manter pelo menos um idioma selecionado
+        selectedLanguages.splice(index, 1);
+        element.classList.remove('selected');
+        element.querySelector('.check-icon').textContent = '';
+    }
+    
+    updateSubmitState();
+}
+
+// DPI slider
+dpiSlider.addEventListener('input', function() {
+    dpiValue.textContent = this.value;
+    
+    // Atualizar preset ativo
+    document.querySelectorAll('.dpi-preset').forEach(preset => {
+        preset.classList.toggle('active', parseInt(preset.dataset.dpi) === parseInt(this.value));
+    });
+});
+
+// Presets de DPI
+document.querySelectorAll('.dpi-preset').forEach(preset => {
+    preset.addEventListener('click', function() {
+        const dpi = this.dataset.dpi;
+        dpiSlider.value = dpi;
+        dpiValue.textContent = dpi;
+        
+        document.querySelectorAll('.dpi-preset').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+// Formato de saída
+document.querySelectorAll('.format-option').forEach(option => {
+    option.addEventListener('click', function() {
+        document.querySelectorAll('.format-option').forEach(o => o.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedFormat = this.dataset.format;
+    });
+});
+
+// Arquivo selecionado
+fileInput.addEventListener('change', updateSubmitState);
+
+// Atualizar estado do botão submit
+function updateSubmitState() {
+    btnSubmit.disabled = !tesseractOk || !fileInput.files[0] || selectedLanguages.length === 0;
+}
+
+// Retry check
+document.getElementById('btn-retry-check').addEventListener('click', checkTesseract);
+
+// Submit do formulário
+form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    if (!fileInput.files[0]) return;
+    
+    btnSubmit.disabled = true;
+    processingInfo.classList.remove('hidden');
+    
+    const progressBar = document.getElementById('progress-bar');
+    const processingText = document.getElementById('processing-text');
+    const processingPercent = document.getElementById('processing-percent');
+    
+    // Simular progresso (OCR pode demorar)
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress = Math.min(progress + Math.random() * 15, 90);
+        progressBar.style.width = progress + '%';
+        processingPercent.textContent = Math.round(progress) + '%';
+    }, 500);
+    
+    try {
+        processingText.textContent = 'Processando OCR...';
+        
+        const { blob, filename } = await OcrApi.convert(fileInput.files[0], {
+            languages: selectedLanguages,
+            dpi: parseInt(dpiSlider.value),
+            outputFormat: selectedFormat
+        });
+        
+        clearInterval(progressInterval);
+        progressBar.style.width = '100%';
+        processingPercent.textContent = '100%';
+        processingText.textContent = 'Concluído!';
+        
+        Utils.downloadBlob(blob, filename);
+        Utils.showToast('OCR concluído com sucesso!', 'success');
+        
+        setTimeout(() => {
+            processingInfo.classList.add('hidden');
+            progressBar.style.width = '0%';
+        }, 2000);
+        
+    } catch (error) {
+        clearInterval(progressInterval);
+        processingInfo.classList.add('hidden');
+        Utils.showToast(error.message, 'error');
+    } finally {
+        btnSubmit.disabled = false;
+    }
+});
+
+// Inicialização
+checkTesseract();
+{% endblock %}

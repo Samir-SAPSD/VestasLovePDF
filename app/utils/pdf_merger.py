@@ -195,3 +195,103 @@ def split_pdf(file_content: bytes, split_points: list) -> list:
     doc.close()
     
     return result
+
+def extract_pages(file_content: bytes, page_numbers: list) -> BytesIO:
+    """
+    Extract specific pages from a PDF into a new PDF.
+    
+    Args:
+        file_content: Binary content of PDF file
+        page_numbers: List of page numbers to extract (1-indexed)
+        
+    Returns:
+        BytesIO with extracted pages PDF
+    """
+    doc = fitz.open(stream=file_content, filetype="pdf")
+    output_doc = fitz.open()
+    
+    # Convert to 0-indexed and sort
+    pages_0indexed = sorted([p - 1 for p in page_numbers if 0 < p <= len(doc)])
+    
+    for page_num in pages_0indexed:
+        output_doc.insert_pdf(doc, from_page=page_num, to_page=page_num)
+    
+    output = BytesIO()
+    output_doc.save(output)
+    output_doc.close()
+    doc.close()
+    
+    output.seek(0)
+    return output
+
+
+def split_by_range(file_content: bytes, pages_per_file: int) -> list:
+    """
+    Split a PDF into multiple files with a fixed number of pages each.
+    
+    Args:
+        file_content: Binary content of PDF file
+        pages_per_file: Number of pages per output file
+        
+    Returns:
+        List of tuples (BytesIO of PDF, suggested name)
+    """
+    doc = fitz.open(stream=file_content, filetype="pdf")
+    total_pages = len(doc)
+    result = []
+    
+    for start in range(0, total_pages, pages_per_file):
+        end = min(start + pages_per_file, total_pages)
+        
+        output_doc = fitz.open()
+        output_doc.insert_pdf(doc, from_page=start, to_page=end - 1)
+        
+        output = BytesIO()
+        output_doc.save(output)
+        output_doc.close()
+        
+        output.seek(0)
+        part_num = (start // pages_per_file) + 1
+        result.append((output, f"parte_{part_num}.pdf"))
+    
+    doc.close()
+    return result
+
+
+def parse_page_range(range_str: str, total_pages: int) -> list:
+    """
+    Parse a page range string like "1-3, 5, 7-10" into a list of page numbers.
+    
+    Args:
+        range_str: Range string
+        total_pages: Total number of pages in the PDF
+        
+    Returns:
+        List of page numbers (1-indexed)
+    """
+    pages = set()
+    
+    for part in range_str.split(','):
+        part = part.strip()
+        if not part:
+            continue
+            
+        if '-' in part:
+            try:
+                start, end = part.split('-')
+                start = int(start.strip())
+                end = int(end.strip())
+                for p in range(start, min(end + 1, total_pages + 1)):
+                    if p > 0:
+                        pages.add(p)
+            except ValueError:
+                continue
+        else:
+            try:
+                p = int(part)
+                if 0 < p <= total_pages:
+                    pages.add(p)
+            except ValueError:
+                continue
+    
+    return sorted(list(pages))

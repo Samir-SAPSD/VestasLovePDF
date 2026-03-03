@@ -4,28 +4,62 @@ echo ============================================================
 echo   VestasLovePDF - Instalador
 echo ============================================================
 echo.
+echo   Arquitetura:
+echo   - Flask API com Blueprint pattern
+echo   - Processadores com Strategy pattern
+echo   - Frontend HTML/CSS/JavaScript
+echo.
 
 :: Verifica se o Python está instalado
 python --version >nul 2>&1
 if errorlevel 1 (
     echo [ERRO] Python não encontrado. Por favor, instale o Python primeiro.
+    echo [INFO] Download: https://www.python.org/downloads/
     pause
     exit /b 1
 )
 
+:: Mostra versão do Python
+for /f "tokens=*" %%i in ('python --version 2^>^&1') do echo [OK] %%i encontrado
+
 :: Navega para o diretório do projeto
 cd /d "%~dp0.."
 
-:: Instala as dependências (usando --user para evitar problemas de permissão)
-echo [1/4] Instalando dependências Python...
-python -m pip install --user -r requirements.txt
-if errorlevel 1 (
-    echo [AVISO] Tentando instalação alternativa...
-    python -m pip install --user flask pandas openpyxl pytesseract Pillow PyMuPDF python-docx
+:: Verifica se requirements.txt existe
+if not exist "requirements.txt" (
+    echo [ERRO] Arquivo requirements.txt não encontrado!
+    pause
+    exit /b 1
 )
 
 echo.
-echo [2/4] Configurando Tesseract OCR...
+echo [1/5] Instalando dependências Python...
+python -m pip install --user --upgrade pip >nul 2>&1
+python -m pip install --user -r requirements.txt
+if errorlevel 1 (
+    echo [AVISO] Tentando instalação alternativa...
+    python -m pip install --user flask flask-cors pandas openpyxl pytesseract Pillow PyMuPDF python-docx pdf2docx xlrd xlwt odfpy pyxlsb
+)
+echo [OK] Dependências instaladas!
+
+echo.
+echo [2/5] Verificando estrutura do projeto...
+:: Verifica pastas necessárias
+if not exist "app\" (
+    echo [ERRO] Pasta app/ não encontrada!
+    pause
+    exit /b 1
+)
+if exist "app\api\v1\" echo   [OK] API v1 presente
+if exist "app\processors\" echo   [OK] Processors presentes
+if exist "app\core\" echo   [OK] Core modules presentes
+if exist "app\templates\" echo   [OK] Templates presentes
+if exist "app\static\" echo   [OK] Static files presentes
+if exist "app\utils\" echo   [OK] Utils presentes
+echo [OK] Estrutura do projeto verificada!
+
+echo.
+echo [3/5] Configurando Tesseract OCR...
 
 :: Verifica se o Tesseract já está na pasta do projeto
 set "LOCAL_TESSERACT=%~dp0..\tesseract\tesseract.exe"
@@ -92,16 +126,34 @@ echo.
 :tesseract_end
 
 echo.
-echo [3/4] Criando atalho na área de trabalho...
+echo [4/5] Criando atalho na área de trabalho...
 
 :: Cria o atalho usando PowerShell
 powershell -ExecutionPolicy Bypass -File "%~dp0create_shortcut.ps1"
 
 echo.
-echo [4/4] Instalação concluída!
+echo [5/5] Testando a aplicação...
+python -c "from app import create_app; print('[OK] Application factory funcionando!')" 2>nul
+if errorlevel 1 (
+    echo [AVISO] Teste básico falhou, mas a instalação continua...
+)
+
 echo.
 echo ============================================================
-echo   O VestasLovePDF foi instalado com sucesso!
+echo   VestasLovePDF instalado com sucesso!
+echo ============================================================
+echo.
+echo   Arquitetura instalada:
+echo   - Flask API v1 com Blueprint pattern
+echo   - Processadores modulares (Strategy pattern)
+echo   - Interface web responsiva
+echo.
+echo   Funcionalidades:
+echo   - Conversor de arquivos (PDF, Word, Excel, imagens)
+echo   - Compressor de PDF
+echo   - Mesclador e divisor de PDF
+echo   - OCR para PDFs escaneados
+echo.
 echo   Um atalho foi criado na sua área de trabalho.
 echo   O programa será executado em modo silencioso (sem terminal).
 echo ============================================================

@@ -1,297 +1,31 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vestas Love PDF</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-color: #1F3144;
-            --primary-hover: #152536;
-            --accent-color: #005AFF;
-            --accent-light: #96CBF0;
-            --accent-hover: #4BA6F7;
-            --highlight-color: #E17D28;
-            --bg-color: #E3E5EB;
-            --text-dark: #606D7B;
-            --text-muted: #A2A9B1;
-        }
-        
-        body {
-            background-color: var(--bg-color);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .hero-section {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #2a4a66 100%);
-            color: white;
-            padding: 50px 0;
-            text-align: center;
-        }
-        
-        .hero-logo {
-            max-height: 60px;
-            margin-bottom: 20px;
-            background-color: white;
-            padding: 15px 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .hero-section h1 {
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-        
-        .hero-section p {
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
-        
-        .features-section {
-            padding: 60px 0;
-            flex: 1;
-        }
-        
-        .feature-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            height: 100%;
-            box-shadow: 0 5px 20px rgba(31, 49, 68, 0.1);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            border: 1px solid transparent;
-        }
-        
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(31, 49, 68, 0.15);
-            color: inherit;
-            border-color: var(--accent-light);
-        }
-        
-        .feature-icon {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, var(--primary-color) 0%, #2a4a66 100%);
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        
-        .feature-icon i {
-            font-size: 32px;
-            color: white;
-        }
-        
-        .feature-card h3 {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--primary-color);
-        }
-        
-        .feature-card p {
-            color: var(--text-dark);
-            margin-bottom: 15px;
-            font-size: 0.95rem;
-        }
-        
-        .feature-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        
-        .feature-tag {
-            background-color: #dbe9f5;
-            color: var(--primary-color);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .feature-arrow {
-            color: var(--accent-color);
-            font-size: 1.2rem;
-            margin-top: 15px;
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-        
-        .feature-card:hover .feature-arrow {
-            opacity: 1;
-            transform: translateX(5px);
-        }
-        
-        .footer {
-            background: var(--primary-color);
-            color: rgba(255,255,255,0.7);
-            padding: 20px 0;
-            text-align: center;
-            font-size: 0.85rem;
-        }
-        
-        .coming-soon {
-            position: relative;
-        }
-        
-        .coming-soon::after {
-            content: 'Em breve';
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: var(--highlight-color);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        
-        /* Modal de inatividade */
-        .idle-modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(31, 49, 68, 0.8);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .idle-modal-overlay.show {
-            display: flex;
-        }
-        
-        .idle-modal {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            animation: modalPop 0.3s ease;
-        }
-        
-        @keyframes modalPop {
-            from {
-                transform: scale(0.8);
-                opacity: 0;
-            }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-        
-        .idle-modal-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-        
-        .idle-modal-icon i {
-            font-size: 36px;
-            color: white;
-        }
-        
-        .idle-modal h3 {
-            color: var(--primary-color);
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-        
-        .idle-modal p {
-            color: var(--text-dark);
-            margin-bottom: 25px;
-        }
-        
-        .idle-modal .countdown {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 20px;
-        }
-        
-        .idle-modal .countdown span {
-            font-weight: 600;
-            color: var(--highlight-color);
-        }
-        
-        .idle-modal-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-        
-        .idle-modal-buttons .btn {
-            padding: 12px 30px;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-idle-yes {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-        }
-        
-        .btn-idle-yes:hover {
-            background-color: var(--accent-color);
-            color: white;
-        }
-        
-        .btn-idle-no {
-            background-color: transparent;
-            color: var(--text-dark);
-            border: 2px solid #ddd;
-        }
-        
-        .btn-idle-no:hover {
-            background-color: #f5f5f5;
-            border-color: #ccc;
-        }
-        
-        .coming-soon .feature-icon {
-            background: linear-gradient(135deg, var(--text-dark) 0%, var(--text-muted) 100%);
-        }
-        
-        .coming-soon:hover {
-            transform: none;
-            cursor: not-allowed;
-        }
-    </style>
-</head>
-<body>
+{% extends "base.html" %}
 
+{% block title %}Vestas Love PDF{% endblock %}
+
+{% block body_class %}d-flex flex-column{% endblock %}
+
+{% block back_link %}{% endblock %}
+
+{% block inline_css %}
+.features-section {
+    padding: 60px 0;
+    flex: 1;
+}
+{% endblock %}
+
+{% block header %}
 <section class="hero-section">
     <div class="container">
-        <img src="/static/vestas-logo.png" alt="Vestas" class="hero-logo">
+        <img src="{{ url_for('static', filename='vestas-logo.png') }}" alt="Vestas" class="hero-logo">
         <h1>Love PDF</h1>
         <p>Selecione uma das opções abaixo para começar</p>
     </div>
 </section>
+{% endblock %}
 
+{% block container_class %}{% endblock %}
+
+{% block content %}
 <section class="features-section">
     <div class="container">
         <div class="row g-4">
@@ -412,127 +146,12 @@
         </div>
     </div>
 </section>
+{% endblock %}
 
+{% block footer %}
 <footer class="footer">
     <div class="container">
         <p class="mb-0">Vestas Love PDF &copy; 2026</p>
     </div>
 </footer>
-
-<!-- Modal de Inatividade -->
-<div class="idle-modal-overlay" id="idleModal">
-    <div class="idle-modal">
-        <div class="idle-modal-icon">
-            <i class="bi bi-question-circle"></i>
-        </div>
-        <h3>Você ainda está aí?</h3>
-        <p>Detectamos que você está inativo há algum tempo.</p>
-        <div class="countdown">
-            A sessão será encerrada em <span id="countdownTimer">5:00</span>
-        </div>
-        <div class="idle-modal-buttons">
-            <button class="btn btn-idle-yes" onclick="confirmActive()">
-                <i class="bi bi-check-lg me-2"></i>Sim, estou aqui
-            </button>
-            <button class="btn btn-idle-no" onclick="closeSession()">
-                <i class="bi bi-x-lg me-2"></i>Não, encerrar
-            </button>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // Configurações de tempo (em milissegundos)
-    const IDLE_TIMEOUT = 5 * 60 * 1000;      // 5 minutos para mostrar popup
-    const POPUP_TIMEOUT = 5 * 60 * 1000;     // 5 minutos para fechar após popup
-    
-    let idleTimer = null;
-    let popupTimer = null;
-    let countdownInterval = null;
-    let isPopupVisible = false;
-    
-    // Reseta o timer de inatividade
-    function resetIdleTimer() {
-        if (isPopupVisible) return; // Não resetar se o popup estiver visível
-        
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(showIdlePopup, IDLE_TIMEOUT);
-    }
-    
-    // Mostra o popup de inatividade
-    function showIdlePopup() {
-        isPopupVisible = true;
-        document.getElementById('idleModal').classList.add('show');
-        startCountdown();
-    }
-    
-    // Inicia a contagem regressiva no popup
-    function startCountdown() {
-        let timeLeft = POPUP_TIMEOUT / 1000; // em segundos
-        
-        updateCountdownDisplay(timeLeft);
-        
-        countdownInterval = setInterval(function() {
-            timeLeft--;
-            updateCountdownDisplay(timeLeft);
-            
-            if (timeLeft <= 0) {
-                closeSession();
-            }
-        }, 1000);
-        
-        popupTimer = setTimeout(closeSession, POPUP_TIMEOUT);
-    }
-    
-    // Atualiza o display da contagem regressiva
-    function updateCountdownDisplay(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        document.getElementById('countdownTimer').textContent = 
-            minutes + ':' + (secs < 10 ? '0' : '') + secs;
-    }
-    
-    // Usuário confirmou que está ativo
-    function confirmActive() {
-        isPopupVisible = false;
-        document.getElementById('idleModal').classList.remove('show');
-        
-        clearTimeout(popupTimer);
-        clearInterval(countdownInterval);
-        
-        resetIdleTimer();
-    }
-    
-    // Encerra a sessão e fecha a aba
-    function closeSession() {
-        clearTimeout(idleTimer);
-        clearTimeout(popupTimer);
-        clearInterval(countdownInterval);
-        clearInterval(heartbeatInterval);
-        
-        // Tenta fechar a aba/janela
-        window.close();
-        
-        // Se não conseguir fechar (restrições do navegador), redireciona para uma página em branco
-        setTimeout(function() {
-            document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;font-family:sans-serif;color:#1F3144;"><h1>Sessão Encerrada</h1><p>Você pode fechar esta aba.</p></div>';
-        }, 500);
-    }
-    
-    // Eventos de atividade do usuário
-    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-    activityEvents.forEach(function(event) {
-        document.addEventListener(event, resetIdleTimer, { passive: true });
-    });
-    
-    // Inicia o timer de inatividade
-    resetIdleTimer();
-    
-    // Envia um sinal de vida (heartbeat) para o servidor a cada 1 segundo
-    const heartbeatInterval = setInterval(function() {
-        fetch('/heartbeat', { method: 'POST' });
-    }, 1000);
-</script>
-</body>
-</html>
+{% endblock %}
